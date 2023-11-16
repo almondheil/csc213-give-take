@@ -12,7 +12,8 @@ take: take.c
 	${CC} ${CFLAGS} -o $@ $^
 
 clean:
-	rm -f give take give-take.zip
+	@echo "Cleaning files..."
+	@rm -f give take give-take.zip
 
 zip: clean
 	@echo "Zipping files up for submission..."
