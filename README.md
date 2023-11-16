@@ -4,43 +4,42 @@ A command-line utility to share files between users on MathLAN.
 
 Final project for CSC 213.
 
-# Building
-
-This project should build on any system with a good unix compiler available.
-
-To build it, just run `make`.
-
-# Commands
-
-When building, you will have two executables -- `give` and `take`. `give` initiates
-the sending of files, and `take` completes the transactions that `give` starts.
-
-## Running `give`
-
-TODO
-
-## Running `take`
-
-TODO
-
 # Example usage
 
-Suppose that `alice` wants to send `bob` her copy of `file.md`. Then, alice will
-run the following.
+First, one user must send the other a file:
 
 ```
-[alice@even] ~ $ give bob file.md
+[user1@computer] ~ $ ./give user2 file.txt
 ```
 
-After this command returns, `alice` is free to do whatever she wants--this
-includes logging off the system.
-
-At any point afterwards, `bob` may run the following command to complete the
-transaction.
+Then, `user1` is free to log off or do anything else on the system. Anytime in
+the future, the user that they sent it to can pick up the file again.
 
 ```
-[bob@even] ~ $ take alice
+[user2@computer] ~ $ ./take user1
 ```
 
-After `bob` completes the transaction, there will not be any leftover processes
-wasting resources on the system.
+This will put `file.txt` into the user's current directory, and clean up any
+parts of the process that were running in the background.
+
+# Detailed usage
+
+## `give` usage
+
+Usage: `./give TARGET_USER FILENAME`
+
+`TARGET_USER` must be another user who exists on this system.
+
+`FILENAME` must be a valid path to a file that is readable by your current user.
+
+## `take` usage
+
+Usage: `./take SOURCE_USER`
+
+`SOURCE_USER` must be the username of another user who exists on this system.
+
+# Notes
+
+The examples in this README assume that the `give` and `take` executables exist
+in the current directory, but they are easier to use if they exist somewhere on
+your `PATH` such as `~/.local/bin/`.
