@@ -1,8 +1,41 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
+
+#define FIFO_NAME "/home/almond/fifo"
+
+void test_take() {
+	// take should not need to create a fifo right?
+	// int rc = mknod(FIFO_NAME, S_IFIFO | 0644, 0);
+	// if (rc == -1) {
+	// 	perror("Take failed to make fifo");
+	// 	exit(EXIT_FAILURE);
+	// }
+
+	printf("waiting for a writer\n");
+	int fd = open(FIFO_NAME, O_RDONLY);
+	if (fd == -1) {
+		perror("Failed to open fifo");
+		exit(EXIT_FAILURE);
+	}
+
+	printf("got a writer. accepting test data.\n");
+
+	char s[300];
+	int num = read(fd, s, 30);
+	if (num == -1) {
+		perror("Failed to write to fifo");
+		exit(EXIT_FAILURE);
+	}
+
+	printf("got data: %s\n", s);
+}
 
 int main(int argc, char ** argv) {
 	// TODO: Later, I may want a case for just running with argc == 1 -- list out pending files
@@ -30,5 +63,6 @@ int main(int argc, char ** argv) {
 	}
 
 	printf("Right now, the program would take files from the user %s\n", argv[1]);
+	test_take();
 	return 0;
 }
