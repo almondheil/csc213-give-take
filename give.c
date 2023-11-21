@@ -10,6 +10,7 @@
 
 #define FIFO_NAME "/home/almond/fifo"
 
+// TODO: Remove
 void test_give() {
 	int rc = mknod(FIFO_NAME, S_IFIFO | 0644, 0);
 	if (rc == -1) {
@@ -37,6 +38,62 @@ void test_give() {
 	remove(FIFO_NAME);
 }
 
+// TODO: Document
+// must be freed by caller
+char * make_fifo_name(char * target_user) {
+	char * home = getenv("HOME");
+	int fifo_name_len = strlen(home) + strlen("/.give-take-") + strlen(target_user) + 1;
+	char * fifo_name = malloc(sizeof(char) * fifo_name_len);
+	strcpy(fifo_name, home);
+	strcat(fifo_name, "/.give-take-");
+	strcat(fifo_name, target_user);
+	return fifo_name;
+}
+
+// Open a file and write its contents into an fd.
+// TODO: Document
+int write_file_contents(int fifo_fd, int file_fd) {
+	return -1;
+}
+
+// Send a file to a user. Returns when the sending is complete
+// TODO: Document
+int send_file(char * target_user, char * filepath, int file_fd) {
+	// Determine a name for this fifo
+	char * fifo_name = make_fifo_name(target_user);
+
+	// Open that FIFO and check for any errors
+	int rc = mknod(fifo_name, S_IFIFO | 0644, 0);
+	if (rc == -1) {
+		perror("Give failed to make FIFO");
+		return -1;
+	}
+
+	// Open the FIFO. This call returns once we get a reader
+	int fifo_fd = open(fifo_name, O_WRONLY);
+	if (fifo_fd == -1) {
+		perror("Give failed to open FIFO");
+		remove(fifo_name);
+		return -1;
+	}
+
+	// TODO: We do not check if the reader is the correct user.
+	// For now we're just pretending it's okay, but it's really not.
+
+	// Write the contents of the file to the FIFO
+	rc = write_file_contents(fifo_fd, file_fd);
+	if (rc == -1) {
+		perror("Give failed to write file");
+		remove(fifo_name);
+		return -1;
+	}
+
+	// Remove the FIFO to clean up after the communication
+	remove(FIFO_NAME);
+	return 0;
+}
+
+// Entry point to the program.
 int main(int argc, char ** argv) {
 	// Check the right number of arguments have been supplied
 	if (argc != 3) {
@@ -62,9 +119,19 @@ int main(int argc, char ** argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	// TODO: Later on, check that argv[2] is a valid file when we try to open it
+	// Open the file to make sure it exists
+	int file_fd = open(argv[2], O_RDONLY);
+	if (file_fd == -1) {
+		perror("Could not open file");
+		exit(EXIT_FAILURE);
+	}
 
-	printf("Right now, the program would give the file %s to the user %s\n", argv[2], argv[1]);
-	test_give();
+	// Send the file to that user
+	send_file(argv[1], argv[2], file_fd);
+
+	if (close(file_fd) == -1) {
+		perror("Could not close file");
+		exit(EXIT_FAILURE);
+	}
 	return 0;
 }
