@@ -72,6 +72,8 @@ int give_file(char * target_user, char * filename, FILE* file) {
 	// TODO: We do not check if the reader is the correct user.
 	// For now we're just pretending it's okay
 
+	// TODO: Probably want a message.c and .h with read and write stuff for this. It is ugh and hard.
+
 	// Write the size of the filename through the fifo
 	size_t filename_len = strlen(filename);
 	if (write(fifo_fd, &filename_len, sizeof(size_t)) != sizeof(size_t)) {
@@ -89,9 +91,20 @@ int give_file(char * target_user, char * filename, FILE* file) {
 		return -1;
 	}
 
-	// Write the filename through the fifo
+	// Send the name of the file
+	size_t bytes_written = 0;
+	while (bytes_written < filename_len) {
+		// Write the remaining message
+		ssize_t rc = write(fifo_fd, filename + bytes_written, filename_len - bytes_written);
+
+		// If the write failed, there was an error
+		if (rc <= 0) return -1;
+
+		bytes_written += rc;
+	}
 
 	// Write the file contents through the fifo
+	// TODO
 
 	// Remove the FIFO to clean up after the communication
 	free(file_data);

@@ -35,6 +35,25 @@ void take_file(char * give_user) {
 	}
 
 	printf("File size was %zu, name length was %zu\n", file_size, filename_size);
+
+	// Read the filename
+	char * filename = malloc(filename_size + 1);
+	size_t bytes_read = 0;
+	while (bytes_read < filename_size) {
+		ssize_t rc = read(fifo_fd, filename + bytes_read, filename_size - bytes_read);
+
+		// TODO: this prolly needs to become its own function, and return NULL here
+		if (rc <= 0) {
+			free(filename);
+			exit(EXIT_FAILURE);
+		}
+
+		bytes_read += rc;
+	}
+	filename[filename_size] = '\0';
+
+	printf("Filename is %s\n", filename);
+
 }
 
 int main(int argc, char ** argv) {
