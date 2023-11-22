@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,64 +9,54 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define FIFO_NAME "/home/almond/fifo"
-
-// TODO: Remove
-void test_give() {
-	int rc = mknod(FIFO_NAME, S_IFIFO | 0644, 0);
-	if (rc == -1) {
-		perror("Give failed to make fifo");
-		exit(EXIT_FAILURE);
-	}
-
-	printf("waiting for a reader\n");
-	int fd = open(FIFO_NAME, O_WRONLY);
-	if (fd == -1) {
-		perror("Failed to open fifo");
-		exit(EXIT_FAILURE);
-	}
-
-	printf("got a reader. sending some test data.\n");
-
-	char * s = "123456";
-	int num = write(fd, s, strlen(s));
-	if (num == -1) {
-		perror("Failed to write to fifo");
-		exit(EXIT_FAILURE);
-	}
-
-	// remove the fifo once done
-	remove(FIFO_NAME);
-}
-
-// TODO: Document
-// must be freed by caller
-char * make_fifo_name(char * target_user) {
-	char * home = getenv("HOME");
-	int fifo_name_len = strlen(home) + strlen("/.give-take-") + strlen(target_user) + 1;
-	char * fifo_name = malloc(sizeof(char) * fifo_name_len);
-	strcpy(fifo_name, home);
-	strcat(fifo_name, "/.give-take-");
-	strcat(fifo_name, target_user);
-	return fifo_name;
-}
-
-// Open a file and write its contents into an fd.
-// TODO: Document
-int write_file_contents(int fifo_fd, int file_fd) {
-	return -1;
-}
+#include "common.h"
 
 // Send a file to a user. Returns when the sending is complete
 // TODO: Document
-int send_file(char * target_user, char * filepath, int file_fd) {
+int give_file(char * target_user, char * filename, FILE* file) {
+	// Seek to the end of the file so we can get its size
+	if (fseek(file, 0, SEEK_END) != 0) {
+		perror("Could nit seek to end of file");
+		return -1;
+	}
+
+	// Find the size
+	size_t file_size = ftell(file);
+
+	// Seek back to the start so we can read it
+	if (fseek(file, 0, SEEK_SET) != 0) {
+		perror("Could not seek to start of file");
+		return -1;
+	}
+
+	// If the file is too big, refuse to send it
+	if (file_size > MAX_FILE_SIZE) {
+		fprintf(stderr, "File size is too large!\n");
+		return -1;
+	}
+
+	// Allocate space, and make sure everything fits
+	uint8_t *file_data = malloc(file_size);
+	if (file_data == NULL) {
+		perror("Could not allocate space to store file contents");
+		return -1;
+	}
+
+	// Read the file data into the malloced space
+	if (fread(file_data, 1, file_size, file) != file_size) {
+		fprintf(stderr, "Failed to read the entire file\n");
+		free(file_data);
+		return -1;
+	}
+
 	// Determine a name for this fifo
-	char * fifo_name = make_fifo_name(target_user);
+	char * fifo_name = find_fifo_name(getenv("LOGNAME"), target_user);
 
 	// Open that FIFO and check for any errors
 	int rc = mknod(fifo_name, S_IFIFO | 0644, 0);
 	if (rc == -1) {
 		perror("Give failed to make FIFO");
+		free(file_data);
 		return -1;
 	}
 
@@ -73,23 +64,38 @@ int send_file(char * target_user, char * filepath, int file_fd) {
 	int fifo_fd = open(fifo_name, O_WRONLY);
 	if (fifo_fd == -1) {
 		perror("Give failed to open FIFO");
+		free(file_data);
 		remove(fifo_name);
 		return -1;
 	}
 
 	// TODO: We do not check if the reader is the correct user.
-	// For now we're just pretending it's okay, but it's really not.
+	// For now we're just pretending it's okay
 
-	// Write the contents of the file to the FIFO
-	rc = write_file_contents(fifo_fd, file_fd);
-	if (rc == -1) {
-		perror("Give failed to write file");
+	// Write the size of the filename through the fifo
+	size_t filename_len = strlen(filename);
+	if (write(fifo_fd, &filename_len, sizeof(size_t)) != sizeof(size_t)) {
+		perror("Failed to write file length");
+		free(file_data);
 		remove(fifo_name);
 		return -1;
 	}
 
+	// Write the size of the file through the fifo
+	if (write(fifo_fd, &file_size, sizeof(size_t)) != sizeof(size_t)) {
+		perror("Failed to write file length");
+		free(file_data);
+		remove(fifo_name);
+		return -1;
+	}
+
+	// Write the filename through the fifo
+
+	// Write the file contents through the fifo
+
 	// Remove the FIFO to clean up after the communication
-	remove(FIFO_NAME);
+	free(file_data);
+	remove(fifo_name);
 	return 0;
 }
 
@@ -107,10 +113,11 @@ int main(int argc, char ** argv) {
 		fprintf(stderr, "Error: Could not determine your username");
 		exit(EXIT_FAILURE);
 	}
-	if (strcmp(give_username, argv[1]) == 0) {
-		fprintf(stderr, "Error: Cannot give a file to yourself\n");
-		exit(EXIT_FAILURE);
-	}
+	// TODO: Later, disable giving to yourself
+	// if (strcmp(give_username, argv[1]) == 0) {
+	// 	fprintf(stderr, "Error: Cannot give a file to yourself\n");
+	// 	exit(EXIT_FAILURE);
+	// }
 
 	// Check that the user they are trying to send to exists
 	struct passwd * to_user = getpwnam(argv[1]);
@@ -120,16 +127,16 @@ int main(int argc, char ** argv) {
 	}
 
 	// Open the file to make sure it exists
-	int file_fd = open(argv[2], O_RDONLY);
-	if (file_fd == -1) {
+	FILE* file = fopen(argv[2], "r");
+	if (file == NULL) {
 		perror("Could not open file");
 		exit(EXIT_FAILURE);
 	}
 
 	// Send the file to that user
-	send_file(argv[1], argv[2], file_fd);
+	give_file(argv[1], argv[2], file);
 
-	if (close(file_fd) == -1) {
+	if (fclose(file) == -1) {
 		perror("Could not close file");
 		exit(EXIT_FAILURE);
 	}
