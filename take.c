@@ -29,14 +29,12 @@ void take_file(char * give_user) {
 		exit(EXIT_FAILURE);
 	}
 
-	printf("we got the data!\n");
-	printf("the filename was %s\n", data->name);
-	printf("the data size is %zu\n", data->size);
+	// Print out the contents of the file we got
+	// TODO: Later, we need to actually save the file
 	for (int i = 0; i < data->size; i++) {
 		char ch = (char) data->data[i];
 		printf("%c", ch);
 	}
-	printf("\n");
 
 	// Free malloc'd structures
 	free(data->name);
