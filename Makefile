@@ -5,10 +5,10 @@ CFLAGS := -Wall -Werror -g
 
 all: give take
 
-give: give.c common.c
+give: give.c communication.c
 	${CC} ${CFLAGS} -o $@ $^
 
-take: take.c common.c
+take: take.c communication.c
 	${CC} ${CFLAGS} -o $@ $^
 
 clean:

@@ -9,51 +9,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "common.h"
+#include "communication.h"
 
 void take_file(char * give_user) {
 	// Find the fifo this transaction will occur through
 	char * fifo_name = find_fifo_name(give_user, getenv("LOGNAME"));
+
+	// Attempt to open it
 	int fifo_fd = open(fifo_name, O_RDONLY);
 	if (fifo_fd == -1) {
 		perror("Failed to open fifo");
 		exit(EXIT_FAILURE);
 	}
 
-	// Read the size of the filename
-	size_t filename_size;
-	if (read(fifo_fd, &filename_size, sizeof(size_t)) != sizeof(size_t)) {
-		perror("Failed to read filename size");
+	// Try to read the data through it
+	filedata_t* data = recv_file(fifo_fd);
+	if (data == NULL) {
+		perror("Failed to receive file through FIFO");
 		exit(EXIT_FAILURE);
 	}
 
-	// Read the size of the file
-	size_t file_size;
-	if (read(fifo_fd, &file_size, sizeof(size_t)) != sizeof(size_t)) {
-		perror("Failed to read file size");
-		exit(EXIT_FAILURE);
-	}
-
-	printf("File size was %zu, name length was %zu\n", file_size, filename_size);
-
-	// Read the filename
-	char * filename = malloc(filename_size + 1);
-	size_t bytes_read = 0;
-	while (bytes_read < filename_size) {
-		ssize_t rc = read(fifo_fd, filename + bytes_read, filename_size - bytes_read);
-
-		// TODO: this prolly needs to become its own function, and return NULL here
-		if (rc <= 0) {
-			free(filename);
-			exit(EXIT_FAILURE);
-		}
-
-		bytes_read += rc;
-	}
-	filename[filename_size] = '\0';
-
-	printf("Filename is %s\n", filename);
-
+	printf("we got the data!\n");
+	printf("the filename was %s\n", data->name);
+	printf("the data size is %zu\n", data->size);
 }
 
 int main(int argc, char ** argv) {

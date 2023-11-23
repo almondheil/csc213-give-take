@@ -1,5 +1,21 @@
-// max 1mb file basically? does that...work?
-#define MAX_FILE_SIZE 1000000
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+typedef struct {
+	char* name;
+	size_t size;
+	uint8_t* data;
+} filedata_t;
+
+// TODO DOCUMENT
+int read_file_contents(filedata_t * file_data, FILE* stream);
+
+// TODO document
+int send_file(int fifo_fd, filedata_t* file_data);
+
+// TODO DOCUMENT
+filedata_t* recv_file(int fifo_fd);
 
 /**
  * Determine the name of a FIFO from the users involved in the
