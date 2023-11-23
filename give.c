@@ -68,8 +68,12 @@ void give_file(char * target_user, char * filename) {
 	send_file(fifo_fd, data);
 
 	// Remove the FIFO to clean up after the communication
-	free(data);
 	remove(fifo_name);
+
+	// Free malloc'd structures
+	free(data->data);
+	free(data);
+	free(fifo_name);
 }
 
 // Entry point to the program.

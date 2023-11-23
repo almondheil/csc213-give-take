@@ -37,6 +37,12 @@ void take_file(char * give_user) {
 		printf("%c", ch);
 	}
 	printf("\n");
+
+	// Free malloc'd structures
+	free(data->name);
+	free(data->data);
+	free(data);
+	free(fifo_name);
 }
 
 int main(int argc, char ** argv) {

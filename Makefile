@@ -1,5 +1,5 @@
 CC     := clang
-CFLAGS := -Wall -Werror -g
+CFLAGS := -Wall -Werror -g -fsanitize=address
 
 .PHONY: all clean zip
 
