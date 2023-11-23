@@ -103,6 +103,11 @@ int main(int argc, char ** argv) {
 		exit(EXIT_FAILURE);
 	}
 
+	int rc = daemon(1, 1);
+	if (rc == -1) {
+		perror("Error creating daemon");
+	}
+
 	// Send the file to that user
 	give_file(argv[1], argv[2]);
 
