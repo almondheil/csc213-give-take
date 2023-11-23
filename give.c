@@ -60,23 +60,12 @@ void give_file(char * target_user, char * filename) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Send the file data through the FIFO
-	send_file(fifo_fd, data);
-	/*
-		 OK NO. This is all bad. Here is the flow I should actually try to have.
-
-		 1. Make a call to read the file contents (not in main) into a file struct
-		    of some sort
-		 2. Make the calls needed to create a FIFO
-		 3. Make a call to send the file data over the FIFO to whoever connects
-		 4. Close the FIFO, and free the file contents we hold in memory
-	*/
-
 	// TODO: We do not check if the reader is the correct user.
 	// For now we're just pretending it's okay
+	// that might be something that has to stand in the final version but who knows
 
-	// TODO: Probably want a message.c and .h with read and write stuff for this. It is ugh and hard.
-	// Write the size of the filename through the fifo
+	// Send the file data through the FIFO
+	send_file(fifo_fd, data);
 
 	// Remove the FIFO to clean up after the communication
 	free(data);
