@@ -103,11 +103,15 @@ int main(int argc, char ** argv) {
 		exit(EXIT_FAILURE);
 	}
 
+	// Create a daemon in the current working directory that can print to stdout
+	// and stderr and report if it fails to work
 	int rc = daemon(1, 1);
 	if (rc == -1) {
 		perror("Error creating daemon");
+		exit(EXIT_FAILURE);
 	}
 
+	// When daemon() succeeds, only the child will get past this point.
 	// Send the file to that user
 	give_file(argv[1], argv[2]);
 
