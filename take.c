@@ -29,11 +29,30 @@ void take_file(char * give_user) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Print out the contents of the file we got
-	// TODO: Later, we need to actually save the file
+	// Refuse to overwrite the file if it already exists
+	// TODO: It would be nice if the transfer could be attempted again...
+	if (access(data->name, F_OK) == 0) {
+		fprintf(stderr, "File \"%s\" already exists!\n", data->name);
+		exit(EXIT_FAILURE);
+	}
+
+	// Open the file to write everything into it
+	FILE* stream = fopen(data->name, "w");
+	if (stream == NULL) {
+		perror("Failed to open output file");
+		exit(EXIT_FAILURE);
+	}
+
+	// Write the transferred data into the new file
 	for (int i = 0; i < data->size; i++) {
 		char ch = (char) data->data[i];
-		printf("%c", ch);
+		fputc(ch, stream);
+	}
+
+	// Save and close the file
+	if (fclose(stream)) {
+		perror("Failed to close output file");
+		exit(EXIT_FAILURE);
 	}
 
 	// Free malloc'd structures
