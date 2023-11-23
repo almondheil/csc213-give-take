@@ -103,17 +103,27 @@ int main(int argc, char ** argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Create a daemon in the current working directory that can print to stdout
-	// and stderr and report if it fails to work
-	int rc = daemon(1, 1);
-	if (rc == -1) {
-		perror("Error creating daemon");
+	// Fork off a child process to do the work
+	switch (fork()) {
+		case -1:
+			// Report if fork() had an error
+			perror("Failed to create a daemon");
+			exit(EXIT_FAILURE);
+		case 0:
+			// Child goes onwards in the code
+			break;
+		default:
+			// Parent returns normally (does not wait)
+			return 0;
+	}
+
+	// Detach from the parent process so we keep running even if they log out
+	if (setsid() == -1) {
+		perror("Failed to create new session");
 		exit(EXIT_FAILURE);
 	}
 
-	// When daemon() succeeds, only the child will get past this point.
-	// Send the file to that user
+	// Then, give the file to the target user (and wait for it to go through)
 	give_file(argv[1], argv[2]);
-
 	return 0;
 }
