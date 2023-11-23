@@ -32,6 +32,11 @@ void take_file(char * give_user) {
 	printf("we got the data!\n");
 	printf("the filename was %s\n", data->name);
 	printf("the data size is %zu\n", data->size);
+	for (int i = 0; i < data->size; i++) {
+		char ch = (char) data->data[i];
+		printf("%c", ch);
+	}
+	printf("\n");
 }
 
 int main(int argc, char ** argv) {

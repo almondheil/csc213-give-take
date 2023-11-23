@@ -111,21 +111,21 @@ filedata_t* recv_file(int fifo_fd) {
 	}
 	data->name[filename_len] = '\0';
 
-	// // TODO: Read the file data
-	// data->data = malloc(data_size);
-	// size_t bytes_read = 0;
-	// while (bytes_read < data_size) {
-	// 	ssize_t rc = read(fifo_fd, data->data + bytes_read, data_size - bytes_read);
+	// TODO: Read the file data
+	data->data = malloc(data_size);
+	bytes_read = 0;
+	while (bytes_read < data_size) {
+		ssize_t rc = read(fifo_fd, data->data + bytes_read, data_size - bytes_read);
 
-	// 	if (rc <= 0) {
-	// 		free(data->data);
-	// 		free(data->name);
-	// 		free(data);
-	// 		return NULL;
-	// 	}
+		if (rc <= 0) {
+			free(data->data);
+			free(data->name);
+			free(data);
+			return NULL;
+		}
 
-	// 	bytes_read += rc;
-	// }
+		bytes_read += rc;
+	}
 
 	return data;
 }
