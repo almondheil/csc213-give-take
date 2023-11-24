@@ -72,19 +72,19 @@ int main(int argc, char ** argv) {
 	// If the user trying to take from themselves, don't let them
 	char * take_username = getenv("LOGNAME");
 	if (take_username == NULL) {
-		fprintf(stderr, "Error: Could not determine your username");
+		fprintf(stderr, "Could not determine your username");
 		exit(EXIT_FAILURE);
 	}
 	// TODO: Later, don't allow taking from yourself
 	// if (strcmp(take_username, argv[1]) == 0) {
-	// 	fprintf(stderr, "Error: Cannot take a file from yourself\n");
+	// 	fprintf(stderr, "Cannot take a file from yourself\n");
 	// 	exit(EXIT_FAILURE);
 	// }
 
 	// Check that the user they are trying to take from exists
 	struct passwd * from_user = getpwnam(argv[1]);
 	if (from_user == NULL) {
-		fprintf(stderr, "Error: Could not find the user %s\n", argv[1]);
+		fprintf(stderr, "Could not find the user %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 

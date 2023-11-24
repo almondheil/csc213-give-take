@@ -87,19 +87,19 @@ int main(int argc, char ** argv) {
 	// If the user trying to send to themselves, don't let them
 	char * give_username = getenv("LOGNAME");
 	if (give_username == NULL) {
-		fprintf(stderr, "Error: Could not determine your username");
+		fprintf(stderr, "Could not determine your username");
 		exit(EXIT_FAILURE);
 	}
 	// TODO: Later, disable giving to yourself
 	// if (strcmp(give_username, argv[1]) == 0) {
-	// 	fprintf(stderr, "Error: Cannot give a file to yourself\n");
+	// 	fprintf(stderr, "Cannot give a file to yourself\n");
 	// 	exit(EXIT_FAILURE);
 	// }
 
 	// Check that the user they are trying to send to exists
 	struct passwd * to_user = getpwnam(argv[1]);
 	if (to_user == NULL) {
-		fprintf(stderr, "Error: Could not find the user %s\n", argv[1]);
+		fprintf(stderr, "Could not find the user %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 
