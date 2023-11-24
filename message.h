@@ -8,10 +8,10 @@ typedef struct {
 } file_t;
 
 // Possible actions for a request
-enum action_t {
+typedef enum {
 	DATA,  //< send file data
 	QUIT,  //< stop hosting
-};
+} action_t;
 
 // Action request, including requester username
 typedef struct {

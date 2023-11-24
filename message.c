@@ -60,7 +60,7 @@ file_t* recv_file(int sock_fd) {
 	}
 
 	// Create a data
-	filedata_t* data = malloc(sizeof(filedata_t));
+	file_t* data = malloc(sizeof(file_t));
 	data->size = data_size;
 
 	// Read the filename
@@ -121,7 +121,7 @@ int send_request(int sock_fd, request_t* req) {
 	}
 
 	// Send the request value
-	if (write(sock_fd, req->action, sizeof(action_t)) != sizeof(action_t)) {
+	if (write(sock_fd, &req->action, sizeof(action_t)) != sizeof(action_t)) {
 		return -1;
 	}
 
@@ -131,17 +131,17 @@ int send_request(int sock_fd, request_t* req) {
 request_t* recv_request(int sock_fd) {
 	// Read the length of the name
 	size_t name_len;
-	if (read(sock_fd, &filename_len, sizeof(size_t)) != sizeof(size_t)) {
+	if (read(sock_fd, &name_len, sizeof(size_t)) != sizeof(size_t)) {
 		return NULL;
 	}
 
 	// Create a struct to store the values we'll receive
-	request_t req = malloc(sizeof(request_t));
+	request_t* req = malloc(sizeof(request_t));
 	req->name = malloc(name_len + 1);
 
 	// Read the name
 	size_t bytes_read = 0;
-	while (bytes_read < filename_len) {
+	while (bytes_read < name_len) {
 		ssize_t rc = read(sock_fd, req->name + bytes_read, name_len - bytes_read);
 
 		if (rc <= 0) {
@@ -157,7 +157,7 @@ request_t* recv_request(int sock_fd) {
 	req->name[name_len] = '\0';
 
 	// Read the requested action
-	if (read(sock_fd, req->action, sizeof(action_t)) != sizeof(action_t)) {
+	if (read(sock_fd, &req->action, sizeof(action_t)) != sizeof(action_t)) {
 		free(req->name);
 		free(req);
 		return NULL;
