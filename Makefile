@@ -5,10 +5,10 @@ CFLAGS := -Wall -Werror -g -fsanitize=address
 
 all: give take
 
-give: give.c communication.c
+give: give.c message.c
 	${CC} ${CFLAGS} -o $@ $^
 
-take: take.c communication.c
+take: take.c message.c
 	${CC} ${CFLAGS} -o $@ $^
 
 clean:
