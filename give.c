@@ -78,52 +78,102 @@ void give_file(char * target_user, char * filename) {
 
 // Entry point to the program.
 int main(int argc, char ** argv) {
-	// Check the right number of arguments have been supplied
-	if (argc != 3) {
-		fprintf(stderr, "Usage: %s USER FILE\n", argv[0]);
-		exit(EXIT_FAILURE);
+	// Handle help text first
+	if (argc == 2 && strcmp(argv[1], "--help") == 0) {
+		// TODO: Write help text
+		// print_help();
+		exit(0);
 	}
 
-	// If the user trying to send to themselves, don't let them
-	char * give_username = getenv("LOGNAME");
-	if (give_username == NULL) {
-		fprintf(stderr, "Could not determine your username");
-		exit(EXIT_FAILURE);
-	}
-	// TODO: Later, disable giving to yourself
-	// if (strcmp(give_username, argv[1]) == 0) {
-	// 	fprintf(stderr, "Cannot give a file to yourself\n");
-	// 	exit(EXIT_FAILURE);
-	// }
+	// Handle actual program behavior
+	if (argc != 3 && argc != 4) {
+		// Case for definitely the wrong number of arguments
 
-	// Check that the user they are trying to send to exists
-	struct passwd * to_user = getpwnam(argv[1]);
-	if (to_user == NULL) {
-		fprintf(stderr, "Could not find the user %s\n", argv[1]);
+		fprintf(stderr, "Invalid syntax! See %s --help for usage.\n", argv[0]);
 		exit(EXIT_FAILURE);
-	}
+	} else if (argc == 3) {
+		// Case for `give <user> <file>`
 
-	// Fork off a child process to do the work
-	switch (fork()) {
-		case -1:
-			// Report if fork() had an error
-			perror("Failed to create a daemon");
+		// Check argv[1] is a user
+		if (!user_exists(argv[1])) {
+			fprintf(stderr, "User %s does not exist!\n", argv[1]);
 			exit(EXIT_FAILURE);
-		case 0:
-			// Child goes onwards in the code
-			break;
-		default:
-			// Parent returns normally (does not wait)
-			return 0;
+		}
+
+		// TODO: UNCOMMENT
+		// // Check the user is not giving to themself
+		// if (strcmp(getenv("LOGNAME"), argv[1]) == 0) {
+		// 	fprintf(stderr, "Cannot give a file to yourself!\n");
+		// 	exit(EXIT_FAILURE);
+		// }
+
+		// Check argv[2] is a file
+		if (access(argv[2], F_OK) != 0) {
+			fprintf(stderr, "File %s does not exist!\n", argv[2]);
+			exit(EXIT_FAILURE);
+		}
+
+		// Open a port for the server
+
+		// TODO: We need to somehow figue out how to tell the user
+		// errors in a good and helpful way. Do we just let them die silently?
+		// Maybe that's what we do if there are errors after the initial setup sequence
+
+		// TODO: UNCOMMENT THIS TO TURN BACK ON DAEMON
+		// // Fork off a child process to do the work
+		// switch (fork()) {
+		// 	case -1:
+		// 		// Report if fork() had an error
+		// 		perror("Failed to create a daemon");
+		// 		exit(EXIT_FAILURE);
+		// 	case 0:
+		// 		// Child goes onwards in the code
+		// 		break;
+		// 	default:
+		// 		// Parent does not wait for child
+		// 		printf("File waiting on port %d\n", port);
+		// 		return 0;
+		// }
+
+		// // Detach from the parent process so we keep running even if they log out
+		// if (setsid() == -1) {
+		// 	perror("Failed to create new session");
+		// 	exit(EXIT_FAILURE);
+		// }
+	} else {
+		// Case for `give -c <user> <port>`
+
+		// Check argv[1] is "-c"
+		if (strcmp(argv[1], "-c") != 0) {
+			fprintf(stderr, "Expected argument -c, see %s --help for usage.\n", argv[0]);
+			exit(EXIT_FAILURE);
+		}
+
+		// Check argv[2] is a user
+		if (!user_exists(argv[2])) {
+			fprintf(stderr, "User %s does not exist!\n", argv[1]);
+			exit(EXIT_FAILURE);
+		}
+
+		// TODO: Connect to the port and make sure that's okay
+
+
+		// TODO
 	}
 
-	// Detach from the parent process so we keep running even if they log out
-	if (setsid() == -1) {
-		perror("Failed to create new session");
-		exit(EXIT_FAILURE);
-	}
+
+	// TODO: REMOVE THIS WHEN DAEMON IS BACK
+	printf("File waiting on port %d\n", port);
 
 	// Then, give the file to the target user (and wait for it to go through)
-	give_file(argv[1], argv[2]);
+	int status = give_file(argv[1], argv[2], socket_fd);
+	if (status == -1) {
+		perror("Failed to give file");
+		exit(EXIT_FAILURE);
+	}
+
+	// Close the socket once the transfer is complete
+	close(socket_fd);
+
 	return 0;
 }
