@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <pwd.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -10,18 +11,9 @@
 #include <unistd.h>
 
 #include "communication.h"
+#include "socket.h"
 
 void take_file(char * give_user) {
-	// Find the fifo this transaction will occur through
-	char * fifo_name = find_fifo_name(give_user, getenv("LOGNAME"));
-
-	// Attempt to open it
-	int fifo_fd = open(fifo_name, O_RDONLY);
-	if (fifo_fd == -1) {
-		perror("Failed to open fifo");
-		exit(EXIT_FAILURE);
-	}
-
 	// Try to read the data through it
 	filedata_t* data = recv_file(fifo_fd);
 	if (data == NULL) {
