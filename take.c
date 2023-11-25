@@ -14,17 +14,35 @@
 #include "socket.h"
 
 void take_file(char * give_user, int fd) {
-	// Try to read the data through it
+	// Send a request for the data to the server side
+	request_t req;
+	req.name = getenv("LOGNAME");
+	req.action = DATA;
+	int rc = send_request(fd, &req);
+	if (rc == -1) {
+		perror("Failed to send file request");
+		exit(EXIT_FAILURE);
+	}
+
+	// Try to receive the data now
 	file_t* data = recv_file(fd);
 	if (data == NULL) {
-		perror("Failed to receive file through FIFO");
+		perror("Failed to receive file");
 		exit(EXIT_FAILURE);
 	}
 
 	// Refuse to overwrite the file if it already exists
 	// TODO: It would be nice if the transfer could be attempted again...
 	if (access(data->name, F_OK) == 0) {
-		fprintf(stderr, "File \"%s\" already exists!\n", data->name);
+		fprintf(stderr, "File \"%s\" already exists! Cancelling transfer.\n", data->name);
+		exit(EXIT_FAILURE);
+	}
+
+	// Send the request to quit now that we're ready
+	req.action = QUIT;
+	rc = send_request(fd, &req);
+	if (rc == -1) {
+		perror("Failed to send quit request");
 		exit(EXIT_FAILURE);
 	}
 

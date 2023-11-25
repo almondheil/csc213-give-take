@@ -14,10 +14,6 @@
 #include "message.h"
 #include "socket.h"
 
-// Global variable to control whether threads are running or not.
-// Not protected, since it will only ever be toggled off
-bool running = true;
-
 // TODO: Should this go here? AAAAAA
 int read_file_contents(file_t * file_data, FILE* stream) {
 	// Seek to the end of the file so we can get its size
@@ -54,30 +50,63 @@ int read_file_contents(file_t * file_data, FILE* stream) {
 // Arguments needed to communicate with a client
 typedef struct {
 	int client_socket_fd;
-	file_t* data;
+	file_t *data;
+	char *target_username;
 } comm_args_t;
 
 void* client_thread(void* arg) {
+	// Unpack args struct passed in
 	comm_args_t* args = (comm_args_t*) arg;
 	int client_socket_fd = args->client_socket_fd;
 	file_t* data = args->data;
+	char* target_username = args->target_username;
 
-	printf("AYO we're a client thread! filename is %s\n", data->name);
-	printf("I am gonna turn off the server now.\n");
-	running = false;
-	//while (running) {
-		// Recieve a command that the client sends us
+	while (true) {
+		// Recieve a request that the client sends us
+		request_t* req = recv_request(client_socket_fd);
+		if (req == NULL) {
+			free(args);
+			perror("Failed to receive request");
+			return NULL;
+		}
 
+		// If the user does not match, stop this thread
+		if (strcmp(req->name, target_username) != 0) {
+			free(args);
+			free(req->name);
+			free(req);
+			return NULL;
+		}
 
-		// Send back some sort of confirmation or data
+		// Take the requested action
+		if (req->action == DATA) {
+				int rc = send_file(client_socket_fd, data);
+				if (rc == -1) {
+					perror("Failed to send file data");
+					free(args);
+					free(req->name);
+					free(req);
+					return NULL;
+				}
+		} else if (req->action == QUIT) {
+			// Free malloc'd args and request before exiting
+			free(args);
+			free(req->name);
+			free(req);
+			exit(EXIT_SUCCESS);
+		}
 
-	//}
+		// Free the request we got
+		free(req->name);
+		free(req);
+	}
+
 	return NULL;
 }
 
 // Send a file to a user. Returns when the sending is complete
 // TODO: Document
-int give_file(char * target_user, char * filename, int socket_fd) {
+int give_file(char * restrict target_user, char * restrict filename, int socket_fd) {
 	/* Prepare to send by storing the data of the file */
 
 	// Open the file
@@ -100,19 +129,24 @@ int give_file(char * target_user, char * filename, int socket_fd) {
 		return -1;
 	}
 
-	// Accept new connections
-	while (running) {
+	// Accept new connections while the server is running
+	while (true) {
     int client_socket_fd = server_socket_accept(socket_fd);
     if (client_socket_fd == -1) {
 			return -1;
     }
 
-		comm_args_t args = {&client_socket_fd, data};
+		// Set up args for this thread
+		// TODO: WE need to free this stuff... hmm
+		comm_args_t* args = malloc(sizeof(comm_args_t));
+		args->client_socket_fd = client_socket_fd;
+		args->data = data;
+		args->target_username = target_user;
 
-    // Spin up a thread to communicate with the client
+    // Spin up a thread to communicate with this client
     pthread_t thread;
     if (pthread_create(&thread, NULL, client_thread,
-                       &args)) {
+                       args)) {
       perror("Failed to create client communication thread");
       return -1;
     }
@@ -122,9 +156,6 @@ int give_file(char * target_user, char * filename, int socket_fd) {
 	// For now we're just pretending it's okay
 	// that might be something that has to stand in the final version but who knows
 
-	// Send the file data through the FIFO
-	send_file(socket_fd, data);
-
 	// Free malloc'd structures
 	free(data->data);
 	free(data);
@@ -133,9 +164,8 @@ int give_file(char * target_user, char * filename, int socket_fd) {
 
 /**
  * Determine whether a username belongs to a user on the system.
- * TODO: THIS SHOULD BE USABLE BY BOTH GIVE AND TAKE, BUT IN WHAT FILE?
  *
- * \param name A potential username
+ * \param name Some username. May or may not exist
  * \return true if name belongs to a user, false otherwise
  */
 bool user_exists(char * name) {
@@ -194,8 +224,27 @@ int main(int argc, char ** argv) {
 			exit(EXIT_FAILURE);
 		}
 
-		// TODO: REWORD THIS??? MAYBE
-		printf("Server listening on port %u\n", port);
+		// TODO: UNCOMMENT THIS TO TURN BACK ON DAEMON
+		// Fork off a child process to do the work
+		switch (fork()) {
+			case -1:
+				// Report if fork() had an error
+				perror("Failed to create a daemon");
+				exit(EXIT_FAILURE);
+			case 0:
+				// Child goes onwards in the code
+				break;
+			default:
+				// Parent does not wait for child
+				printf("Server listening on port %u\n", port);
+				return 0;
+		}
+
+		// // Detach from the parent process so we keep running even if they log out
+		// if (setsid() == -1) {
+		// 	perror("Failed to create new session");
+		// 	exit(EXIT_FAILURE);
+		// }
 
 		int rc = give_file(argv[1], argv[2], server_socket_fd);
 		if (rc == -1) {
@@ -207,27 +256,6 @@ int main(int argc, char ** argv) {
 		// errors in a good and helpful way. Do we just let them die silently?
 		// Maybe that's what we do if there are errors after the initial setup sequence
 
-		// TODO: UNCOMMENT THIS TO TURN BACK ON DAEMON
-		// // Fork off a child process to do the work
-		// switch (fork()) {
-		// 	case -1:
-		// 		// Report if fork() had an error
-		// 		perror("Failed to create a daemon");
-		// 		exit(EXIT_FAILURE);
-		// 	case 0:
-		// 		// Child goes onwards in the code
-		// 		break;
-		// 	default:
-		// 		// Parent does not wait for child
-		// 		printf("File waiting on port %d\n", port);
-		// 		return 0;
-		// }
-
-		// // Detach from the parent process so we keep running even if they log out
-		// if (setsid() == -1) {
-		// 	perror("Failed to create new session");
-		// 	exit(EXIT_FAILURE);
-		// }
 
 		// Close the socket once the transfer is complete
 		close(server_socket_fd);
