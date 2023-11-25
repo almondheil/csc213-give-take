@@ -54,6 +54,13 @@ void take_file(char * give_user, int fd) {
 }
 
 int main(int argc, char ** argv) {
+	// Handle help text first
+	if (argc == 2 && strcmp(argv[1], "--help") == 0) {
+		// TODO: Write help text
+		// print_help();
+		exit(0);
+	}
+
 	// TODO: Later, I may want a case for just running with argc == 1 -- list out pending files
 	if (argc != 2 && argc != 3) {
 		printf("Usage: %s PORT [MACHINE]\n", argv[0]);
