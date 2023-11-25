@@ -54,6 +54,12 @@ typedef struct {
 	char *target_username;
 } comm_args_t;
 
+/**
+ * Communicate with a client
+ *
+ * \param arg Pointer to malloc'd comm_args_t struct
+ * \return NULL
+ */
 void* client_thread(void* arg) {
 	// Unpack args struct passed in
 	comm_args_t* args = (comm_args_t*) arg;
@@ -66,7 +72,6 @@ void* client_thread(void* arg) {
 		request_t* req = recv_request(client_socket_fd);
 		if (req == NULL) {
 			free(args);
-			perror("Failed to receive request");
 			return NULL;
 		}
 
@@ -82,7 +87,6 @@ void* client_thread(void* arg) {
 		if (req->action == DATA) {
 				int rc = send_file(client_socket_fd, data);
 				if (rc == -1) {
-					perror("Failed to send file data");
 					free(args);
 					free(req->name);
 					free(req);
