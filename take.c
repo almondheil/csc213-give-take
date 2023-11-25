@@ -10,12 +10,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "communication.h"
+#include "message.h"
 #include "socket.h"
 
-void take_file(char * give_user) {
+void take_file(char * give_user, int fd) {
 	// Try to read the data through it
-	filedata_t* data = recv_file(fifo_fd);
+	file_t* data = recv_file(fd);
 	if (data == NULL) {
 		perror("Failed to receive file through FIFO");
 		exit(EXIT_FAILURE);
@@ -51,13 +51,12 @@ void take_file(char * give_user) {
 	free(data->name);
 	free(data->data);
 	free(data);
-	free(fifo_name);
 }
 
 int main(int argc, char ** argv) {
 	// TODO: Later, I may want a case for just running with argc == 1 -- list out pending files
-	if (argc != 2) {
-		printf("Usage: %s USER\n", argv[0]);
+	if (argc != 2 && argc != 3) {
+		printf("Usage: %s PORT [MACHINE]\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -73,14 +72,17 @@ int main(int argc, char ** argv) {
 	// 	exit(EXIT_FAILURE);
 	// }
 
-	// Check that the user they are trying to take from exists
-	struct passwd * from_user = getpwnam(argv[1]);
-	if (from_user == NULL) {
-		fprintf(stderr, "Could not find the user %s\n", argv[1]);
-		exit(EXIT_FAILURE);
-	}
+	// TODO: localhost vs other machine processing
+	unsigned short port = atoi(argv[1]);
 
-	take_file(argv[1]);
+	// TODO: Update away from localhost but yeah
+	int socket_fd = socket_connect("localhost", port);
+  if (socket_fd == -1) {
+    perror("Failed to connect");
+    exit(EXIT_FAILURE);
+  }
+
+	take_file(argv[1], socket_fd);
 
 	return 0;
 }

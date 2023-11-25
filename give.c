@@ -14,6 +14,10 @@
 #include "message.h"
 #include "socket.h"
 
+// Global variable to control whether threads are running or not.
+// Not protected, since it will only ever be toggled off
+bool running = true;
+
 // TODO: Should this go here? AAAAAA
 int read_file_contents(file_t * file_data, FILE* stream) {
 	// Seek to the end of the file so we can get its size
@@ -55,16 +59,20 @@ typedef struct {
 
 void* client_thread(void* arg) {
 	comm_args_t* args = (comm_args_t*) arg;
-	file_t* data = args->data;
 	int client_socket_fd = args->client_socket_fd;
+	file_t* data = args->data;
 
-	while (true) {
+	printf("AYO we're a client thread! filename is %s\n", data->name);
+	printf("I am gonna turn off the server now.\n");
+	running = false;
+	//while (running) {
 		// Recieve a command that the client sends us
 
 
 		// Send back some sort of confirmation or data
 
-	}
+	//}
+	return NULL;
 }
 
 // Send a file to a user. Returns when the sending is complete
@@ -93,16 +101,15 @@ int give_file(char * target_user, char * filename, int socket_fd) {
 	}
 
 	// Accept new connections
-	while (true) {
+	while (running) {
     int client_socket_fd = server_socket_accept(socket_fd);
     if (client_socket_fd == -1) {
 			return -1;
     }
 
-		comm_args_t args = {data, &client_socket_fd};
+		comm_args_t args = {&client_socket_fd, data};
 
     // Spin up a thread to communicate with the client
-    // TODO do we need thread data after the loop iteration (eg for joining?)
     pthread_t thread;
     if (pthread_create(&thread, NULL, client_thread,
                        &args)) {
@@ -174,6 +181,27 @@ int main(int argc, char ** argv) {
 		}
 
 		// Open a port for the server
+		unsigned short port = 0;
+		int server_socket_fd = server_socket_open(&port);
+		if (server_socket_fd == -1) {
+			perror("Server socket was not opened");
+			exit(EXIT_FAILURE);
+		}
+
+		// Start listening for connections, with a maximum of one queued connection
+		if (listen(server_socket_fd, 1)) {
+			perror("listen failed");
+			exit(EXIT_FAILURE);
+		}
+
+		// TODO: REWORD THIS??? MAYBE
+		printf("Server listening on port %u\n", port);
+
+		int rc = give_file(argv[1], argv[2], server_socket_fd);
+		if (rc == -1) {
+			perror("Failed to give file");
+			exit(EXIT_FAILURE);
+		}
 
 		// TODO: We need to somehow figue out how to tell the user
 		// errors in a good and helpful way. Do we just let them die silently?
@@ -200,6 +228,9 @@ int main(int argc, char ** argv) {
 		// 	perror("Failed to create new session");
 		// 	exit(EXIT_FAILURE);
 		// }
+
+		// Close the socket once the transfer is complete
+		close(server_socket_fd);
 	} else {
 		// Case for `give -c <user> <port>`
 
@@ -219,19 +250,6 @@ int main(int argc, char ** argv) {
 
 		// TODO
 	}
-
-	// TODO: REMOVE THIS WHEN DAEMON IS BACK
-	printf("File waiting on port %d\n", port);
-
-	// Then, give the file to the target user (and wait for it to go through)
-	int status = give_file(argv[1], argv[2], socket_fd);
-	if (status == -1) {
-		perror("Failed to give file");
-		exit(EXIT_FAILURE);
-	}
-
-	// Close the socket once the transfer is complete
-	close(socket_fd);
 
 	return 0;
 }
