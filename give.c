@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <pwd.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,55 +11,104 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "communication.h"
+#include "message.h"
+#include "socket.h"
+
+// TODO: Should this go here? AAAAAA
+int read_file_contents(file_t * file_data, FILE* stream) {
+	// Seek to the end of the file so we can get its size
+	if (fseek(stream, 0, SEEK_END) != 0) {
+		perror("Could not seek to end of file");
+		return -1;
+	}
+
+	// Find the size
+	file_data->size = ftell(stream);
+
+	// Seek back to the start so we can read it
+	if (fseek(stream, 0, SEEK_SET) != 0) {
+		perror("Could not seek to start of file");
+		return -1;
+	}
+
+	// Allocate space, and make sure everything fits
+	file_data->data = malloc(file_data->size);
+	if (file_data->data == NULL) {
+		perror("Could not allocate space to store file contents");
+		return -1;
+	}
+
+	// Read the file data into the malloced space
+	if (fread(file_data->data, 1, file_data->size, stream) != file_data->size) {
+		fprintf(stderr, "Failed to read the entire file\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+// Arguments needed to communicate with a client
+typedef struct {
+	int client_socket_fd;
+	file_t* data;
+} comm_args_t;
+
+void* client_thread(void* arg) {
+	comm_args_t* args = (comm_args_t*) arg;
+	file_t* data = args->data;
+	int client_socket_fd = args->client_socket_fd;
+
+	while (true) {
+		// Recieve a command that the client sends us
+
+
+		// Send back some sort of confirmation or data
+
+	}
+}
 
 // Send a file to a user. Returns when the sending is complete
 // TODO: Document
-void give_file(char * target_user, char * filename) {
+int give_file(char * target_user, char * filename, int socket_fd) {
 	/* Prepare to send by storing the data of the file */
 
 	// Open the file
 	FILE * stream = fopen(filename, "r");
 	if (stream == NULL) {
-		perror("Could not read file");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
-	// Set up a filedata_t with the right filename
-	filedata_t * data = malloc(sizeof(filedata_t));
+	// Set up a file_t with the right filename
+	file_t * data = malloc(sizeof(file_t));
 	data->name = filename;
 
 	// Read the contents of the file into the data struct we have
 	if (read_file_contents(data, stream) == -1) {
-		fprintf(stderr, "Failed to read file contents\n");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	// Close the file now, we have its data stored
 	if (fclose(stream)) {
-		perror("Could not close file");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
-	/* Create a FIFO to send the file data through */
+	// Accept new connections
+	while (true) {
+    int client_socket_fd = server_socket_accept(socket_fd);
+    if (client_socket_fd == -1) {
+			return -1;
+    }
 
-	// Determine the name to use
-	char * fifo_name = find_fifo_name(getenv("LOGNAME"), target_user);
+		comm_args_t args = {data, &client_socket_fd};
 
-	// Make it a FIFO
-	int rc = mknod(fifo_name, S_IFIFO | 0644, 0);
-	if (rc == -1) {
-		perror("Give failed to make FIFO");
-		exit(EXIT_FAILURE);
-	}
-
-	// Open the FIFO. This call returns once we get a reader
-	int fifo_fd = open(fifo_name, O_WRONLY);
-	if (fifo_fd == -1) {
-		perror("Give failed to open FIFO");
-		free(data);
-		remove(fifo_name);
-		exit(EXIT_FAILURE);
+    // Spin up a thread to communicate with the client
+    // TODO do we need thread data after the loop iteration (eg for joining?)
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, client_thread,
+                       &args)) {
+      perror("Failed to create client communication thread");
+      return -1;
+    }
 	}
 
 	// TODO: We do not check if the reader is the correct user.
@@ -65,15 +116,24 @@ void give_file(char * target_user, char * filename) {
 	// that might be something that has to stand in the final version but who knows
 
 	// Send the file data through the FIFO
-	send_file(fifo_fd, data);
-
-	// Remove the FIFO to clean up after the communication
-	remove(fifo_name);
+	send_file(socket_fd, data);
 
 	// Free malloc'd structures
 	free(data->data);
 	free(data);
-	free(fifo_name);
+	return 0;
+}
+
+/**
+ * Determine whether a username belongs to a user on the system.
+ * TODO: THIS SHOULD BE USABLE BY BOTH GIVE AND TAKE, BUT IN WHAT FILE?
+ *
+ * \param name A potential username
+ * \return true if name belongs to a user, false otherwise
+ */
+bool user_exists(char * name) {
+	struct passwd * user = getpwnam(name);
+	return (user != NULL);
 }
 
 // Entry point to the program.
@@ -154,13 +214,11 @@ int main(int argc, char ** argv) {
 			fprintf(stderr, "User %s does not exist!\n", argv[1]);
 			exit(EXIT_FAILURE);
 		}
-
 		// TODO: Connect to the port and make sure that's okay
 
 
 		// TODO
 	}
-
 
 	// TODO: REMOVE THIS WHEN DAEMON IS BACK
 	printf("File waiting on port %d\n", port);
