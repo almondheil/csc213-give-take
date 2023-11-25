@@ -279,9 +279,24 @@ int main(int argc, char **argv) {
       fprintf(stderr, "User %s does not exist!\n", argv[1]);
       exit(EXIT_FAILURE);
     }
-    // TODO: Connect to the port and make sure that's okay
 
-    // TODO
+    // Connect to the port
+    unsigned short port = atoi(argv[3]);
+    int socket_fd = socket_connect("localhost", port);
+    if (socket_fd == -1) {
+      perror("Failed to connect");
+      exit(EXIT_FAILURE);
+    }
+
+    // Cancel the give
+    request_t req;
+    req.name = argv[2];
+    req.action = QUIT;
+    int rc = send_request(socket_fd, &req);
+    if (rc == -1) {
+      perror("Failed to send quit request");
+      exit(EXIT_FAILURE);
+    }
   }
 
   return 0;
