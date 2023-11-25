@@ -1,7 +1,7 @@
 CC     := clang
 CFLAGS := -Wall -g -fsanitize=address -lpthread
 
-.PHONY: all clean zip
+.PHONY: all clean zip format
 
 all: give take
 
@@ -12,10 +12,10 @@ take: take.c message.c
 	${CC} ${CFLAGS} -o $@ $^
 
 clean:
-	@echo "Cleaning files..."
-	@rm -f give take give-take.zip
+	rm -f give take give-take.zip
 
 zip: clean
-	@echo "Zipping files up for submission..."
-	@zip -q -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags
-	@echo "All done!"
+	zip -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags
+
+format:
+	clang-format -i --style=file $(wildcard *.c) $(wildcard *.h)

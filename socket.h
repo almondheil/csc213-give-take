@@ -17,9 +17,9 @@
  * \returns   A file descriptor for the connected socket, or -1 if there is an
  *            error. The errno value will be set by the failed POSIX call.
  */
-int socket_connect(char* server_name, unsigned short port) {
+int socket_connect(char *server_name, unsigned short port) {
   // Look up the server by name
-  struct hostent* server = gethostbyname(server_name);
+  struct hostent *server = gethostbyname(server_name);
   if (server == NULL) {
     // Set errno, since gethostbyname does not
     errno = EHOSTDOWN;
@@ -34,15 +34,15 @@ int socket_connect(char* server_name, unsigned short port) {
 
   // Set up an address
   struct sockaddr_in addr = {
-      .sin_family = AF_INET,   // This is an internet socket
-      .sin_port = htons(port)  // Connect to the appropriate port number
+      .sin_family = AF_INET,  // This is an internet socket
+      .sin_port = htons(port) // Connect to the appropriate port number
   };
 
   // Copy the server address info returned by gethostbyname into the address
   memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
   // Connect to the server
-  if (connect(fd, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
+  if (connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in))) {
     close(fd);
     return -1;
   }
@@ -63,7 +63,7 @@ int socket_connect(char* server_name, unsigned short port) {
  *                In case of failure, this function returns -1. The value of
  *                errno will be set by the POSIX socket function that failed.
  */
-int server_socket_open(unsigned short* port) {
+int server_socket_open(unsigned short *port) {
   // Create a server socket. Return if there is an error.
   int fd = socket(AF_INET, SOCK_STREAM, 0);
   if (fd == -1) {
@@ -72,20 +72,20 @@ int server_socket_open(unsigned short* port) {
 
   // Set up the server socket to listen
   struct sockaddr_in addr = {
-      .sin_family = AF_INET,          // This is an internet socket
-      .sin_addr.s_addr = INADDR_ANY,  // Listen for connections from any client
-      .sin_port = htons(*port)        // Use the specified port (may be zero)
+      .sin_family = AF_INET,         // This is an internet socket
+      .sin_addr.s_addr = INADDR_ANY, // Listen for connections from any client
+      .sin_port = htons(*port)       // Use the specified port (may be zero)
   };
 
   // Bind the server socket to the address. Return if there is an error.
-  if (bind(fd, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
+  if (bind(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in))) {
     close(fd);
     return -1;
   }
 
   // Get information about the new socket
   socklen_t addrlen = sizeof(struct sockaddr_in);
-  if (getsockname(fd, (struct sockaddr*)&addr, &addrlen)) {
+  if (getsockname(fd, (struct sockaddr *)&addr, &addrlen)) {
     close(fd);
     return -1;
   }
@@ -112,7 +112,8 @@ int server_socket_accept(int server_socket_fd) {
   socklen_t client_addr_len = sizeof(struct sockaddr_in);
 
   // Block until we receive a connection or failure
-  int client_socket_fd = accept(server_socket_fd, (struct sockaddr*)&client_addr, &client_addr_len);
+  int client_socket_fd = accept(
+      server_socket_fd, (struct sockaddr *)&client_addr, &client_addr_len);
 
   // Did something go wrong?
   if (client_socket_fd == -1) {
