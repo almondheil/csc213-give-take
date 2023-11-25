@@ -108,21 +108,36 @@ void *client_thread(void *arg) {
   return NULL;
 }
 
+char * get_shortname(char * path) {
+  // Find the last / character in the path (if it exists)
+  char * last_slash = strrchr(path, '/');
+
+  // If there is a /, trim to only everything after.
+  // this turns /path/to/file.ext into file.ext
+  if (last_slash != NULL) {
+    return last_slash + 1;
+  } else {
+    return path;
+  }
+}
+
 // Send a file to a user. Returns when the sending is complete
 // TODO: Document
-int give_file(char *restrict target_user, char *restrict filename,
+int give_file(char *restrict target_user, char *restrict file_path,
               int socket_fd) {
   /* Prepare to send by storing the data of the file */
 
   // Open the file
-  FILE *stream = fopen(filename, "r");
+  FILE *stream = fopen(file_path, "r");
   if (stream == NULL) {
     return -1;
   }
 
   // Set up a file_t with the right filename
   file_t *data = malloc(sizeof(file_t));
-  data->name = filename;
+
+  // Set the name to the shortname of the file (without /path/to/)
+  data->name = get_shortname(file_path);
 
   // Read the contents of the file into the data struct we have
   if (read_file_contents(data, stream) == -1) {
@@ -281,6 +296,7 @@ int main(int argc, char **argv) {
     }
 
     // Connect to the port
+    // TODO: Should I support cancelling from another computer? Why not I guess
     unsigned short port = atoi(argv[3]);
     int socket_fd = socket_connect("localhost", port);
     if (socket_fd == -1) {
