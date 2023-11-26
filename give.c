@@ -237,6 +237,9 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
+    // Announce that everything went okay
+    printf("Successfully cancelled get\n");
+
     // Close the socket before we exit
     close(socket_fd);
   }

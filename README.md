@@ -119,6 +119,8 @@ a give on a different system than localhost.
 - `PORT` is a required network parameter. It refers to the port that the initial
 	give was hosted on.
 
+Will print to the terminal announcing that the give was cancelled.
+
 ## `take` usage
 
 ### Take a file that has been given
@@ -140,6 +142,8 @@ Parameters are as follows:
 
 - `PORT` is a required network parameter. It specifies the port to attempt to take
 	the file through.
+
+Will print to the terminal announcing that the file was received.
 
 # Notes
 

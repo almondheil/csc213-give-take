@@ -65,6 +65,9 @@ void take_file(int socket_fd) {
     exit(EXIT_FAILURE);
   }
 
+  // Announce that we got the file
+  printf("Successfully took file %s\n", data->name);
+
   // Free malloc'd structures
   free(data->name);
   free(data->data);
