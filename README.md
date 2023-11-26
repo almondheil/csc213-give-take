@@ -36,7 +36,8 @@ intended recipient attempts to take the file instead.
 
 # Example usage
 
-First, one user must send the other a file:
+First, one user must send the other a file, and the port that has been opened
+will be displayed.
 
 ```
 [heilalmond@even] ~ $ ./give fakeuser file.txt
@@ -77,6 +78,8 @@ error message will be printed and the transaction can be attempted again.
 give TARGET_USER FILENAME
 ```
 
+Parameters are as follows:
+
 - `TARGET_USER` must be another user who exists on this system.
 
   - That user is also assumed to exist on the system that `take` will be run on,
@@ -100,6 +103,8 @@ give TARGET_USER FILENAME
 give -c TARGET_USER [HOST:]PORT
 ```
 
+Parameters are as follows:
+
 - `TARGET_USER` must be the username the give was initially created with.
 
 - `HOST` is an optional network parameter. If used, it will attempt to cancel
@@ -121,6 +126,8 @@ serving the file through, and will be used to terminate the initial give.
 ```
 take [HOST:]PORT
 ```
+
+Parameters are as follows:
 
 - `HOST` is an optional network parameter. If used, it will attempt to take from a
 	given MathLAN machine other than localhost.
@@ -160,3 +167,5 @@ take [HOST:]PORT
 - [ ] List incoming takes (on the local machine)
 
 - [ ] Find if it's possible to list processes on a remote machine
+
+- [ ] Look into encoding ports as letters to make them easier to remember / type
