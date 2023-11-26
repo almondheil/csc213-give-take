@@ -152,3 +152,11 @@ take [HOST:]PORT
 	processes out of my control it may be killed if it is idle for too long, or
 	if the system reboots. Keep this in mind, and do not leave these processes
 	running indefinitely.
+
+# Further work / TODO
+
+- [ ] List outgoing gives (from the local machine)
+
+- [ ] List incoming takes (on the local machine)
+
+- [ ] Find if it's possible to list processes on a remote machine
