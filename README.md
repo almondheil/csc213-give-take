@@ -169,3 +169,5 @@ Parameters are as follows:
 - [ ] Find if it's possible to list processes on a remote machine
 
 - [ ] Look into encoding ports as letters to make them easier to remember / type
+
+- [ ] Do not require `TARGET_USER` when cancelling a give
