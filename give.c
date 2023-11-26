@@ -13,6 +13,7 @@ typedef struct {
   int client_socket_fd;  //< socket fd of connected client
   file_t *data;          //< pointer to file data
   char *target_username; //< username of the intended client
+  char *owner_username;  //< username of the user who initialized the get
 } comm_args_t;
 
 /**
@@ -65,6 +66,7 @@ void *receive_client_requests(void *arg) {
   int client_socket_fd = args->client_socket_fd;
   file_t *data = args->data;
   char *target_username = args->target_username;
+  char *owner_username = args->owner_username;
 
   while (true) {
     // Recieve a request that the client sends us
@@ -78,7 +80,7 @@ void *receive_client_requests(void *arg) {
 
     // If the user does not match, stop this thread without exiting the program
     // (basically a failed authentication, but way lower stakes)
-    if (strcmp(req->name, target_username) != 0) {
+    if (strcmp(req->name, target_username) != 0 && strcmp(req->name, owner_username) != 0) {
       free(args);
       free(req->name);
       free(req);
@@ -161,6 +163,7 @@ int give_file(char *restrict target_user, char *restrict file_path,
     args->client_socket_fd = client_socket_fd;
     args->data = data;
     args->target_username = target_user;
+    args->owner_username = getenv("LOGNAME");
 
     // Spin up a thread to communicate with this client
     pthread_t thread;
@@ -183,7 +186,7 @@ int give_file(char *restrict target_user, char *restrict file_path,
  */
 void print_usage(char *prog_name) {
   fprintf(stderr, "Usage: %s USER FILE\n", prog_name);
-  fprintf(stderr, "       %s -c USER [HOST:]PORT\n", prog_name);
+  fprintf(stderr, "       %s -c [HOST:]PORT\n", prog_name);
 }
 
 // Entry point to the program.
@@ -192,16 +195,56 @@ int main(int argc, char **argv) {
   /*
    * Invalid usage
    */
-  if (argc != 3 && argc != 4) {
+  if (argc != 3) {
     // They definitely gave the wrong number of arguments
     print_usage(argv[0]);
     exit(EXIT_FAILURE);
   }
 
   /*
+   * give -c [HOST:]PORT
+   */
+  else if (strcmp(argv[1], "-c") == 0) {
+    // Check argv[1] is "-c",otherwise the arguments were malformed
+    if (strcmp(argv[1], "-c") != 0) {
+      print_usage(argv[0]);
+      exit(EXIT_FAILURE);
+    }
+
+    // Make space for the worst case hostname length. argv[1] cannot entirely be
+    // a hostname, so this allocates extra space, but that's okay. This is also
+    // long enough to fully contain "localhost" no matter what.
+    char hostname[strlen(argv[2]) + strlen(".cs.grinnell.edu")];
+
+    // Parse a port and hostname from that
+    unsigned short port = 0;
+    parse_connection_info(argv[2], hostname, &port);
+
+    // Connect to the port
+    int socket_fd = socket_connect(hostname, port);
+    if (socket_fd == -1) {
+      perror("Failed to connect");
+      exit(EXIT_FAILURE);
+    }
+
+    // Cancel the give
+    request_t req;
+    req.name = getenv("LOGNAME");
+    req.action = QUIT;
+    int rc = send_request(socket_fd, &req);
+    if (rc == -1) {
+      perror("Failed to send quit request");
+      exit(EXIT_FAILURE);
+    }
+
+    // Close the socket before we exit
+    close(socket_fd);
+  }
+
+  /*
    * give USER FILE
    */
-  else if (argc == 3) {
+  else {
     // Check argv[1] is a user
     if (!user_exists(argv[1])) {
       fprintf(stderr, "User %s does not exist!\n", argv[1]);
@@ -267,51 +310,6 @@ int main(int argc, char **argv) {
     close(server_socket_fd);
   }
 
-  /*
-   * give -c USER [HOST:]PORT
-   */
-  else {
-    // Check argv[1] is "-c",otherwise the arguments were malformed
-    if (strcmp(argv[1], "-c") != 0) {
-      print_usage(argv[0]);
-      exit(EXIT_FAILURE);
-    }
-
-    // Check argv[2] is a user
-    if (!user_exists(argv[2])) {
-      fprintf(stderr, "User %s does not exist!\n", argv[1]);
-      exit(EXIT_FAILURE);
-    }
-
-    // Make space for the worst case hostname length. argv[1] cannot entirely be
-    // a hostname, so this allocates extra space, but that's okay. This is also
-    // long enough to fully contain "localhost" no matter what.
-    char hostname[strlen(argv[3]) + strlen(".cs.grinnell.edu")];
-
-    // Parse a port and hostname from that
-    unsigned short port = 0;
-    parse_connection_info(argv[3], hostname, &port);
-
-    // Connect to the port
-    int socket_fd = socket_connect(hostname, port);
-    if (socket_fd == -1) {
-      perror("Failed to connect");
-      exit(EXIT_FAILURE);
-    }
-
-    // Cancel the give
-    request_t req;
-    req.name = argv[2];
-    req.action = QUIT;
-    int rc = send_request(socket_fd, &req);
-    if (rc == -1) {
-      perror("Failed to send quit request");
-      exit(EXIT_FAILURE);
-    }
-
-    // Close the socket before we exit
-    close(socket_fd);
-  }
 
   return 0;
 }

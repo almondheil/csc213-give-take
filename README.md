@@ -97,15 +97,15 @@ Parameters are as follows:
 		file that will be truncated when giving. For instance, if you run `give` on
 		`/long/path/to/file.png`, it will be transferred as `file.png`.
 
+Will print the port being used to the terminal.
+
 ### Cancel a give
 
 ```
-give -c TARGET_USER [HOST:]PORT
+give -c [HOST:]PORT
 ```
 
 Parameters are as follows:
-
-- `TARGET_USER` must be the username the give was initially created with.
 
 - `HOST` is an optional network parameter. If used, it will attempt to cancel
 a give on a different system than localhost.
@@ -116,8 +116,8 @@ a give on a different system than localhost.
   - There must be a colon with no spaces between it and the
 		port. For instance, `even:50112` is valid, but `even: 50112` is not.
 
-- `PORT` is a required network parameter. It is the port the initial give is
-serving the file through, and will be used to terminate the initial give.
+- `PORT` is a required network parameter. It refers to the port that the initial
+	give was hosted on.
 
 ## `take` usage
 
@@ -170,4 +170,4 @@ Parameters are as follows:
 
 - [ ] Look into encoding ports as letters to make them easier to remember / type
 
-- [ ] Do not require `TARGET_USER` when cancelling a give
+- [x] Do not require `TARGET_USER` when cancelling a give
