@@ -12,8 +12,9 @@
 
 #include "message.h"
 #include "socket.h"
+#include "utils.h"
 
-void take_file(char *give_user, int fd) {
+void take_file(int fd) {
   // Send a request for the data to the server side
   request_t req;
   req.name = getenv("LOGNAME");
@@ -82,8 +83,8 @@ int main(int argc, char **argv) {
 
   // TODO: Later, I may want a case for just running with argc == 1 -- list out
   // pending files
-  if (argc != 2 && argc != 3) {
-    printf("Usage: %s PORT [MACHINE]\n", argv[0]);
+  if (argc != 2) {
+    printf("Usage: %s [MACHINE:]PORT\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -93,14 +94,21 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Could not determine your username");
     exit(EXIT_FAILURE);
   }
-  // TODO: Later, don't allow taking from yourself
+  // // TODO: Later, don't allow taking from yourself
   // if (strcmp(take_username, argv[1]) == 0) {
   // 	fprintf(stderr, "Cannot take a file from yourself\n");
   // 	exit(EXIT_FAILURE);
   // }
 
-  // TODO: localhost vs other machine processing
-  unsigned short port = atoi(argv[1]);
+  // Make space for the worst case hostname length. argv[1] cannot entirely be a
+  // hostname, so this allocates extra space, but that's okay.
+  // This is also long enough to fully contain "localhost" no matter what.
+  char hostname[strlen(argv[1]) + strlen(".cs.grinnell.edu")];
+
+  // Parse a port and hostname from that
+  unsigned short port = 0;
+  parse_connection_info(argv[1], hostname, &port);
+  printf("hostname = %s, port = %d\n", hostname, port);
 
   // TODO: Update away from localhost but yeah
   int socket_fd = socket_connect("localhost", port);
@@ -109,7 +117,7 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
-  take_file(argv[1], socket_fd);
+  take_file(socket_fd);
 
   return 0;
 }

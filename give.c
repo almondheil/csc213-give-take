@@ -13,6 +13,7 @@
 
 #include "message.h"
 #include "socket.h"
+#include "utils.h"
 
 // TODO: Should this go here? AAAAAA
 int read_file_contents(file_t *file_data, FILE *stream) {
@@ -171,11 +172,6 @@ int give_file(char *restrict target_user, char *restrict file_path,
     }
   }
 
-  // TODO: We do not check if the reader is the correct user.
-  // For now we're just pretending it's okay
-  // that might be something that has to stand in the final version but who
-  // knows
-
   // Free malloc'd structures
   free(data->data);
   free(data);
@@ -184,6 +180,7 @@ int give_file(char *restrict target_user, char *restrict file_path,
 
 /**
  * Determine whether a username belongs to a user on the system.
+TODO: IS THIS NEED TO BE ON BOTH SIDES?
  *
  * \param name Some username. May or may not exist
  * \return true if name belongs to a user, false otherwise
@@ -205,11 +202,11 @@ int main(int argc, char **argv) {
   // Handle actual program behavior
   if (argc != 3 && argc != 4) {
     // Case for definitely the wrong number of arguments
-
-    fprintf(stderr, "Invalid syntax! See %s --help for usage.\n", argv[0]);
+    fprintf(stderr, "Usage: %s {USER FILE | -c USER [HOST:]PORT}\n", argv[0]);
+    fprintf(stderr, "\tSee %s --help for more info.\n", argv[0]);
     exit(EXIT_FAILURE);
   } else if (argc == 3) {
-    // Case for `give <user> <file>`
+    // Case for `give USER FILE`
 
     // Check argv[1] is a user
     if (!user_exists(argv[1])) {
@@ -260,11 +257,11 @@ int main(int argc, char **argv) {
       return 0;
     }
 
-    // // Detach from the parent process so we keep running even if they log out
-    // if (setsid() == -1) {
-    // 	perror("Failed to create new session");
-    // 	exit(EXIT_FAILURE);
-    // }
+    // Detach from the parent process so we keep running even if they log out
+    if (setsid() == -1) {
+    	perror("Failed to create new session");
+    	exit(EXIT_FAILURE);
+    }
 
     int rc = give_file(argv[1], argv[2], server_socket_fd);
     if (rc == -1) {
@@ -280,10 +277,11 @@ int main(int argc, char **argv) {
     // Close the socket once the transfer is complete
     close(server_socket_fd);
   } else {
-    // Case for `give -c <user> <port>`
+    // Case for `give -c USER [HOST:]PORT`
 
     // Check argv[1] is "-c"
     if (strcmp(argv[1], "-c") != 0) {
+      // TODO BETTER ERROR MESSAGE
       fprintf(stderr, "Expected argument -c, see %s --help for usage.\n",
               argv[0]);
       exit(EXIT_FAILURE);
@@ -295,10 +293,19 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
+    // Make space for the worst case hostname length. argv[1] cannot entirely be a
+    // hostname, so this allocates extra space, but that's okay.
+    // This is also long enough to fully contain "localhost" no matter what.
+    char hostname[strlen(argv[3]) + strlen(".cs.grinnell.edu")];
+
+    // Parse a port and hostname from that
+    unsigned short port = 0;
+    parse_connection_info(argv[3], hostname, &port);
+    printf("hostname = %s, port = %d\n", hostname, port);
+
     // Connect to the port
     // TODO: Should I support cancelling from another computer? Why not I guess
-    unsigned short port = atoi(argv[3]);
-    int socket_fd = socket_connect("localhost", port);
+    int socket_fd = socket_connect(hostname, port);
     if (socket_fd == -1) {
       perror("Failed to connect");
       exit(EXIT_FAILURE);
