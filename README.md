@@ -8,9 +8,9 @@ Final project for CSC 213.
 
 In my project proposal, I specified these three areas:
 
-1. Inter-Process Communication
+1. Inter-Process Communication / Networks and Distributed Systems
 
-	Meant as a catch-all for whatever kind of inter-process communication I ended up
+	This category was meant as a catch-all for whatever kind of inter-process communication I ended up
 	using. In retrospect this project leverages network communication rather than
 	any other methods in order to be able to work between multiple computers, but
 	this was not obvious at the time.
@@ -25,6 +25,10 @@ In my project proposal, I specified these three areas:
 
 	This project takes advantage of processes to daemonize the giving process, so
 	that it is possible to do other things and/or log out after initializing a give.
+
+	It's also an important part of this project to clean up the processes whenever
+	it is possible to do so. This means that a give process should not stick
+	around indefinitely on the system, which would be a bad thing.
 
 In order to communicate effectively over the network, this project also uses
 parallelism with threads in order to respond properly if someone other than the
