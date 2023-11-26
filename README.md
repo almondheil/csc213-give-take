@@ -174,4 +174,6 @@ Will print to the terminal announcing that the file was received.
 
 - [ ] Look into encoding ports as letters to make them easier to remember / type
 
+- [ ] Disallow giving to yourself and taking from yourself
+
 - [x] Do not require `TARGET_USER` when cancelling a give
