@@ -14,41 +14,46 @@
 #include "socket.h"
 #include "utils.h"
 
-void take_file(int fd) {
+/**
+ * Take a file through a network socket.
+ *
+ * \param socket_fd  File descriptor of the open network socket.
+ */
+void take_file(int socket_fd) {
   // Send a request for the data to the server side
   request_t req;
   req.name = getenv("LOGNAME");
   req.action = DATA;
-  int rc = send_request(fd, &req);
+  int rc = send_request(socket_fd, &req);
   if (rc == -1) {
     perror("Failed to send file request");
     exit(EXIT_FAILURE);
   }
 
   // Try to receive the data now
-  file_t *data = recv_file(fd);
+  file_t *data = recv_file(socket_fd);
   if (data == NULL) {
     perror("Failed to receive file");
     exit(EXIT_FAILURE);
   }
 
   // Refuse to overwrite the file if it already exists
-  // TODO: It would be nice if the transfer could be attempted again...
   if (access(data->name, F_OK) == 0) {
-    fprintf(stderr, "File \"%s\" already exists! Cancelling transfer.\n",
+    fprintf(stderr, "File %s already exists! Cancelling transfer.\n",
             data->name);
     exit(EXIT_FAILURE);
   }
 
-  // Send the request to quit now that we're ready
+  // Now that we're sure that the file does not already exist,
+  // tell the host to quit and stop serving the file
   req.action = QUIT;
-  rc = send_request(fd, &req);
+  rc = send_request(socket_fd, &req);
   if (rc == -1) {
     perror("Failed to send quit request");
     exit(EXIT_FAILURE);
   }
 
-  // Open the file to write everything into it
+  // Open the file locally
   FILE *stream = fopen(data->name, "w");
   if (stream == NULL) {
     perror("Failed to open output file");
@@ -73,16 +78,9 @@ void take_file(int fd) {
   free(data);
 }
 
+// Entry point to the program.
 int main(int argc, char **argv) {
-  // Handle help text first
-  if (argc == 2 && strcmp(argv[1], "--help") == 0) {
-    // TODO: Write help text
-    // print_help();
-    exit(0);
-  }
-
-  // TODO: Later, I may want a case for just running with argc == 1 -- list out
-  // pending files
+  // Make sure there are the right number of parameters
   if (argc != 2) {
     printf("Usage: %s [HOST:]PORT\n", argv[0]);
     exit(EXIT_FAILURE);
@@ -105,12 +103,12 @@ int main(int argc, char **argv) {
   // This is also long enough to fully contain "localhost" no matter what.
   char hostname[strlen(argv[1]) + strlen(".cs.grinnell.edu")];
 
-  // Parse a port and hostname from that
+  // Parse a port and hostname from argv[1]
   unsigned short port = 0;
   parse_connection_info(argv[1], hostname, &port);
 
-  // TODO: Update away from localhost but yeah
-  int socket_fd = socket_connect("localhost", port);
+  // Attempt to connect to that socket
+  int socket_fd = socket_connect(hostname, port);
   if (socket_fd == -1) {
     perror("Failed to connect");
     exit(EXIT_FAILURE);

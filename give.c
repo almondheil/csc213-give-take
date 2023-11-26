@@ -161,7 +161,7 @@ int give_file(char *restrict target_user, char *restrict file_path,
     }
 
     // Set up args for this thread
-    // TODO: WE need to free this stuff... hmm
+    // They will be freed when the thread exits
     comm_args_t *args = malloc(sizeof(comm_args_t));
     args->client_socket_fd = client_socket_fd;
     args->data = data;
@@ -193,20 +193,27 @@ void print_usage(char *prog_name) {
 
 // Entry point to the program.
 int main(int argc, char **argv) {
+
+  /*
+   * Invalid usage
+   */
   if (argc != 3 && argc != 4) {
     // They definitely gave the wrong number of arguments
     print_usage(argv[0]);
     exit(EXIT_FAILURE);
-  } else if (argc == 3) {
-    // Case for `give USER FILE`
+  }
 
+  /*
+   * give USER FILE
+   */
+  else if (argc == 3) {
     // Check argv[1] is a user
     if (!user_exists(argv[1])) {
       fprintf(stderr, "User %s does not exist!\n", argv[1]);
       exit(EXIT_FAILURE);
     }
 
-    // TODO: UNCOMMENT
+    // TODO: UNCOMMENT when a user can't give to themself
     // // Check the user is not giving to themself
     // if (strcmp(getenv("LOGNAME"), argv[1]) == 0) {
     // 	fprintf(stderr, "Cannot give a file to yourself!\n");
@@ -263,9 +270,12 @@ int main(int argc, char **argv) {
 
     // Close the socket once the transfer is complete
     close(server_socket_fd);
-  } else {
-    // Case for `give -c USER [HOST:]PORT`
+  }
 
+  /*
+   * give -c USER [HOST:]PORT
+   */
+  else {
     // Check argv[1] is "-c",otherwise the arguments were malformed
     if (strcmp(argv[1], "-c") != 0) {
       print_usage(argv[0]);
@@ -288,7 +298,6 @@ int main(int argc, char **argv) {
     parse_connection_info(argv[3], hostname, &port);
 
     // Connect to the port
-    // TODO: Should I support cancelling from another computer? Why not I guess
     int socket_fd = socket_connect(hostname, port);
     if (socket_fd == -1) {
       perror("Failed to connect");
