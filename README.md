@@ -123,31 +123,32 @@ take [HOST:]PORT
 ```
 
 - `HOST` is an optional network parameter. If used, it will attempt to take from a
-		given MathLAN machine other than localhost.
+	given MathLAN machine other than localhost.
 
   - It should be provided as the name of a MathLAN machine, without the
-		  `.cs.grinnell.edu` suffix.
+	  `.cs.grinnell.edu` suffix.
 
   - There must be a colon with no spaces between it and the
-	  	port. For instance, `even:50112` is valid, but `even: 50112` is not.
+  	port. For instance, `even:50112` is valid, but `even: 50112` is not.
 
 - `PORT` is a required network parameter. It specifies the port to attempt to take
-		the file through.
+	the file through.
 
 # Notes
 
 - The examples in this README assume that the `give` and `take` executables exist
-		in the current directory, but they are easier to use if they exist somewhere on
-		your `PATH` such as `~/.local/bin/`.
+	in the current directory, but they are easier to use if they exist somewhere on
+	your `PATH` such as `~/.local/bin/`.
 
 - When hosting a file, `give` accepts requests and checks that they contain the
-		correct username (the one that the give was initiated using).
-		- This is not a particularly robust method because the target username is
+	correct username (the one that the give was initiated using).
+
+  - This is not a particularly robust method because the target username is
 		possible to find by looking at the process with tools like `ps`, so it only
 		really protects against the problem of users accidentally typing the wrong
 		port when using `take`. It cannot defend against any belligerent attackers.
 
 - The give process will not terminate when a user logs out, but due to system
-		processes out of my control it may be killed if it is idle for too long, or
-		if the system reboots. Keep this in mind, and do not leave these processes
-		running indefinitely.
+	processes out of my control it may be killed if it is idle for too long, or
+	if the system reboots. Keep this in mind, and do not leave these processes
+	running indefinitely.
