@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
   // TODO: Later, I may want a case for just running with argc == 1 -- list out
   // pending files
   if (argc != 2) {
-    printf("Usage: %s [MACHINE:]PORT\n", argv[0]);
+    printf("Usage: %s [HOST:]PORT\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -108,7 +108,6 @@ int main(int argc, char **argv) {
   // Parse a port and hostname from that
   unsigned short port = 0;
   parse_connection_info(argv[1], hostname, &port);
-  printf("hostname = %s, port = %d\n", hostname, port);
 
   // TODO: Update away from localhost but yeah
   int socket_fd = socket_connect("localhost", port);
@@ -117,7 +116,10 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
+  // Take the file from that socket
   take_file(socket_fd);
 
+  // Close the socket before we exit
+  close(socket_fd);
   return 0;
 }
