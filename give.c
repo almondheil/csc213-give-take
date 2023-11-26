@@ -10,9 +10,9 @@
 
 // Arguments needed to communicate with a client in a thread
 typedef struct {
-  int client_socket_fd;   //< socket fd of connected client
-  file_t *data;           //< pointer to file data
-  char *target_username;  //< username of the intended client
+  int client_socket_fd;  //< socket fd of connected client
+  file_t *data;          //< pointer to file data
+  char *target_username; //< username of the intended client
 } comm_args_t;
 
 /**
@@ -182,8 +182,8 @@ int give_file(char *restrict target_user, char *restrict file_path,
  * \param prog_name  The program name to include in usage help
  */
 void print_usage(char *prog_name) {
-    fprintf(stderr, "Usage: %s USER FILE\n", prog_name);
-    fprintf(stderr, "       %s -c USER [HOST:]PORT\n", prog_name);
+  fprintf(stderr, "Usage: %s USER FILE\n", prog_name);
+  fprintf(stderr, "       %s -c USER [HOST:]PORT\n", prog_name);
 }
 
 // Entry point to the program.
@@ -252,8 +252,8 @@ int main(int argc, char **argv) {
 
     // Detach from the parent process so we keep running even if they log out
     if (setsid() == -1) {
-    	perror("Failed to create new session");
-    	exit(EXIT_FAILURE);
+      perror("Failed to create new session");
+      exit(EXIT_FAILURE);
     }
 
     // Give the user that file.
@@ -283,9 +283,9 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
-    // Make space for the worst case hostname length. argv[1] cannot entirely be a
-    // hostname, so this allocates extra space, but that's okay.
-    // This is also long enough to fully contain "localhost" no matter what.
+    // Make space for the worst case hostname length. argv[1] cannot entirely be
+    // a hostname, so this allocates extra space, but that's okay. This is also
+    // long enough to fully contain "localhost" no matter what.
     char hostname[strlen(argv[3]) + strlen(".cs.grinnell.edu")];
 
     // Parse a port and hostname from that

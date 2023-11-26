@@ -18,7 +18,9 @@ void parse_connection_info(char *in, char *hostname, unsigned short *port) {
   char *rest = in;
   int i = 0;
   while ((token = strtok_r(rest, ":", &rest))) {
-    if (i >= 2) break;
+    if (i >= 2) {
+      break;
+    }
 
     parts[i] = token;
     i++;
