@@ -38,7 +38,7 @@ intended recipient attempts to take the file instead.
 
 First, one user must send the other a file:
 
-```
+```bash
 [heilalmond@even] ~ $ ./give fakeuser file.txt
 Server listening on port 50112
 ```
@@ -49,7 +49,7 @@ the future, the user that they sent it to can pick up the file.
 If this is happening on the same computer (localhost), it is possible to pick up
 the file knowing only the port:
 
-```
+```bash
 [fakeuser@even] ~ $ ./take 50112
 (file.txt will appear in their current directory)
 ```
@@ -58,7 +58,7 @@ However, it is also possible to retrieve a file that was originally given from a
 different machine. In order to do this, you also need to know the name of the
 MathLAN computer (without `.cs.grinnell.edu`):
 
-```
+```bash
 [fakeuser@forsythe] ~ $ ./take even:50112
 (file.txt will appear in their current directory)
 ```
@@ -71,62 +71,68 @@ error message will be printed and the transaction can be attempted again.
 
 ## `give` usage
 
-```
-give TARGET_USER FILENAME  --  Give a file to a user
+### Give a file to a user
+
+```bash
+give TARGET_USER FILENAME
 ```
 
-`TARGET_USER` must be another user who exists on this system.
+- `TARGET_USER` must be another user who exists on this system.
 
-- That user is also assumed to exist on the system that `take` will be run on,
+  - That user is also assumed to exist on the system that `take` will be run on,
 		which is true on MathLAN but not computer systems in general.
 
-`FILENAME` must be a valid path to a file that is readable by your current user.
+- `FILENAME` must be a valid path to a file that is readable by your current user.
 
-- It does not need to be a text file. This utility sends the raw bytes across,
+  - It does not need to be a text file. This utility sends the raw bytes across,
 		so it can be any type of file.
 
-- Permissions will not be preserved, the file will be transferred with the
+  - Permissions will not be preserved, the file will be transferred with the
 		default `umask` of the target user.
 
-- It need not be a file in your current directory, and if there is a path to the
+  - It need not be a file in your current directory, and if there is a path to the
 		file that will be truncated when giving. For instance, if you run `give` on
 		`/long/path/to/file.png`, it will be transferred as `file.png`.
 
-```
-give -c TARGET_USER [HOST:]PORT  -- Cancel a give
+### Cancel a give
+
+```bash
+give -c TARGET_USER [HOST:]PORT
 ```
 
-`TARGET_USER` must be the username the give was initially created with.
+- `TARGET_USER` must be the username the give was initially created with.
 
-`HOST` is an optional network parameter. If used, it will attempt to cancel
+- `HOST` is an optional network parameter. If used, it will attempt to cancel
 a give on a different system than localhost.
 
-- It should be provided as the name of a MathLAN machine, without the
+  - It should be provided as the name of a MathLAN machine, without the
 		`.cs.grinnell.edu` suffix.
 
-- There must be a colon with no spaces between it and the
+  - There must be a colon with no spaces between it and the
 		port. For instance, `even:50112` is valid, but `even: 50112` is not.
 
-`PORT` is a required network parameter. It is the port the initial give is
+- `PORT` is a required network parameter. It is the port the initial give is
 serving the file through, and will be used to terminate the initial give.
 
 ## `take` usage
 
+### Take a file that has been given
+
+```bash
+take [HOST:]PORT
 ```
-take [HOST:]PORT  -- Take a file that has been given to you
-```
 
-`HOST` is an optional network parameter. If used, it will attempt to take from a
-given MathLAN machine other than localhost.
+- `HOST` is an optional network parameter. If used, it will attempt to take from a
+		given MathLAN machine other than localhost.
 
-- It should be provided as the name of a MathLAN machine, without the
-		`.cs.grinnell.edu` suffix.
+  - It should be provided as the name of a MathLAN machine, without the
+		  `.cs.grinnell.edu` suffix.
 
-- There must be a colon with no spaces between it and the
-		port. For instance, `even:50112` is valid, but `even: 50112` is not.
+  - There must be a colon with no spaces between it and the
+	  	port. For instance, `even:50112` is valid, but `even: 50112` is not.
 
-`PORT` is a required network parameter. It specifies the port to attempt to take
-the file through.
+- `PORT` is a required network parameter. It specifies the port to attempt to take
+		the file through.
 
 # Notes
 
@@ -136,8 +142,7 @@ the file through.
 
 - When hosting a file, `give` accepts requests and checks that they contain the
 		correct username (the one that the give was initiated using).
-
-		This is not a particularly robust method because the target username is
+		- This is not a particularly robust method because the target username is
 		possible to find by looking at the process with tools like `ps`, so it only
 		really protects against the problem of users accidentally typing the wrong
 		port when using `take`. It cannot defend against any belligerent attackers.
