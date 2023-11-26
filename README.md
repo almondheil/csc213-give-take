@@ -38,7 +38,7 @@ intended recipient attempts to take the file instead.
 
 First, one user must send the other a file:
 
-```bash
+```
 [heilalmond@even] ~ $ ./give fakeuser file.txt
 Server listening on port 50112
 ```
@@ -49,7 +49,7 @@ the future, the user that they sent it to can pick up the file.
 If this is happening on the same computer (localhost), it is possible to pick up
 the file knowing only the port:
 
-```bash
+```
 [fakeuser@even] ~ $ ./take 50112
 (file.txt will appear in their current directory)
 ```
@@ -58,7 +58,7 @@ However, it is also possible to retrieve a file that was originally given from a
 different machine. In order to do this, you also need to know the name of the
 MathLAN computer (without `.cs.grinnell.edu`):
 
-```bash
+```
 [fakeuser@forsythe] ~ $ ./take even:50112
 (file.txt will appear in their current directory)
 ```
@@ -73,7 +73,7 @@ error message will be printed and the transaction can be attempted again.
 
 ### Give a file to a user
 
-```bash
+```
 give TARGET_USER FILENAME
 ```
 
@@ -96,7 +96,7 @@ give TARGET_USER FILENAME
 
 ### Cancel a give
 
-```bash
+```
 give -c TARGET_USER [HOST:]PORT
 ```
 
@@ -118,7 +118,7 @@ serving the file through, and will be used to terminate the initial give.
 
 ### Take a file that has been given
 
-```bash
+```
 take [HOST:]PORT
 ```
 
