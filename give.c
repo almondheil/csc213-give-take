@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "message.h"
@@ -131,6 +132,7 @@ int give_file(char *restrict target_username, char *restrict file_path,
   // Open the file
   FILE *stream = fopen(file_path, "r");
   if (stream == NULL) {
+    perror("Failed to open file");
     return -1;
   }
 
@@ -142,11 +144,13 @@ int give_file(char *restrict target_username, char *restrict file_path,
 
   // Read the contents of the file into the data struct we have
   if (read_file_contents(data, stream) == -1) {
+    perror("Failed to read file contents");
     return -1;
   }
 
   // Close the file now, we have its data stored
   if (fclose(stream)) {
+    perror("Failed to close file after reading");
     return -1;
   }
 
@@ -154,6 +158,7 @@ int give_file(char *restrict target_username, char *restrict file_path,
   while (true) {
     int client_socket_fd = server_socket_accept(socket_fd);
     if (client_socket_fd == -1) {
+      perror("Failed to accept new connection");
       return -1;
     }
 
@@ -261,9 +266,20 @@ int main(int argc, char **argv) {
     // 	exit(EXIT_FAILURE);
     // }
 
-    // Check argv[2] is a file
+    // Check argv[2] exists
     if (access(argv[2], F_OK) != 0) {
       fprintf(stderr, "File %s does not exist!\n", argv[2]);
+      exit(EXIT_FAILURE);
+    }
+
+    // Check argv[2] is a regular file, not something else
+    struct stat st;
+    if (stat(argv[2], &st) == -1) {
+      perror("Could not stat file");
+      exit(EXIT_FAILURE);
+    }
+    if (!S_ISREG(st.st_mode)) {
+      fprintf(stderr, "Can only give a regular file.\n");
       exit(EXIT_FAILURE);
     }
 
@@ -305,7 +321,7 @@ int main(int argc, char **argv) {
     // Give the user that file.
     int rc = give_file(argv[1], argv[2], server_socket_fd);
     if (rc == -1) {
-      perror("Failed to give file");
+      // give_file prints its own (more descriptive) error messages
       exit(EXIT_FAILURE);
     }
 
