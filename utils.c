@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "utils.h"
 
@@ -55,4 +56,15 @@ char *get_shortname(char *path) {
 bool user_exists(char *name) {
   struct passwd *user = getpwnam(name);
   return (user != NULL);
+}
+
+char *get_username() {
+  uid_t uid = geteuid();
+
+  struct passwd *pw = getpwuid(uid);
+  if (pw == NULL) {
+    return NULL;
+  }
+
+  return pw->pw_name;
 }

@@ -12,7 +12,7 @@
 typedef struct {
   int client_socket_fd;  //< socket fd of connected client
   file_t *data;          //< pointer to file data
-  char *target_username; //< username of the intended client
+  char *target_usernamename; //< username of the intended client
   char *owner_username;  //< username of the user who initialized the get
 } comm_args_t;
 
@@ -65,7 +65,7 @@ void *receive_client_requests(void *arg) {
   comm_args_t *args = (comm_args_t *)arg;
   int client_socket_fd = args->client_socket_fd;
   file_t *data = args->data;
-  char *target_username = args->target_username;
+  char *target_usernamename = args->target_usernamename;
   char *owner_username = args->owner_username;
 
   while (true) {
@@ -80,7 +80,7 @@ void *receive_client_requests(void *arg) {
 
     // If the user does not match, stop this thread without exiting the program
     // (basically a failed authentication, but way lower stakes)
-    if (strcmp(req->username, target_username) != 0 && strcmp(req->username, owner_username) != 0) {
+    if (strcmp(req->username, target_usernamename) != 0 && strcmp(req->username, owner_username) != 0) {
       free(args);
       free(req->username);
       free(req);
@@ -118,13 +118,13 @@ void *receive_client_requests(void *arg) {
 /**
  * Give a file to a target user through a network socket.
  *
- * \param target_user  User to send the file.
+ * \param target_username  User to send the file.
  * \param file_path    Full path to the file.
  * \param socket_fd    Network socket to send through.
  * \return             0 if there are no errors, -1 if there are errors.
  *                     Sets errno on failure.
  */
-int give_file(char *restrict target_user, char *restrict file_path,
+int give_file(char *restrict target_username, char *restrict file_path,
               int socket_fd) {
   /* Prepare to send by storing the data of the file */
 
@@ -162,8 +162,8 @@ int give_file(char *restrict target_user, char *restrict file_path,
     comm_args_t *args = malloc(sizeof(comm_args_t));
     args->client_socket_fd = client_socket_fd;
     args->data = data;
-    args->target_username = target_user;
-    args->owner_username = getenv("LOGNAME");
+    args->target_usernamename = target_username;
+    args->owner_username = get_username();
 
     // Spin up a thread to communicate with this client
     pthread_t thread;
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
 
     // Cancel the give
     request_t req;
-    req.username = getenv("LOGNAME");
+    req.username = get_username();
     req.action = QUIT;
     int rc = send_request(socket_fd, &req);
     if (rc == -1) {
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
 
     // TODO: UNCOMMENT when a user can't give to themself
     // // Check the user is not giving to themself
-    // if (strcmp(getenv("LOGNAME"), argv[1]) == 0) {
+    // if (strcmp(get_username(), argv[1]) == 0) {
     // 	fprintf(stderr, "Cannot give a file to yourself!\n");
     // 	exit(EXIT_FAILURE);
     // }

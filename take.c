@@ -15,7 +15,7 @@
 void take_file(int socket_fd) {
   // Send a request for the data to the server side
   request_t req;
-  req.username = getenv("LOGNAME");
+  req.username = get_username();
   req.action = DATA;
   int rc = send_request(socket_fd, &req);
   if (rc == -1) {
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   }
 
   // If the user trying to take from themselves, don't let them
-  char *take_username = getenv("LOGNAME");
+  char *take_username = get_username();
   if (take_username == NULL) {
     fprintf(stderr, "Could not determine your username");
     exit(EXIT_FAILURE);

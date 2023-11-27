@@ -29,3 +29,10 @@ char *get_shortname(char *path);
  * \return      true if the user exists, false otherwise
  */
 bool user_exists(char *name);
+
+/**
+ * Determine the username from the euid of the running process.
+ *
+ * \return Pointer to username if it exists, or NULL if it does not.
+ */
+char *get_username();
