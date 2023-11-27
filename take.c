@@ -15,7 +15,7 @@
 void take_file(int socket_fd) {
   // Send a request for the data to the server side
   request_t req;
-  req.name = getenv("LOGNAME");
+  req.username = getenv("LOGNAME");
   req.action = DATA;
   int rc = send_request(socket_fd, &req);
   if (rc == -1) {
@@ -31,9 +31,9 @@ void take_file(int socket_fd) {
   }
 
   // Refuse to overwrite the file if it already exists
-  if (access(data->name, F_OK) == 0) {
+  if (access(data->filename, F_OK) == 0) {
     fprintf(stderr, "File %s already exists! Cancelling transfer.\n",
-            data->name);
+            data->filename);
     exit(EXIT_FAILURE);
   }
 
@@ -47,7 +47,7 @@ void take_file(int socket_fd) {
   }
 
   // Open the file locally
-  FILE *stream = fopen(data->name, "w");
+  FILE *stream = fopen(data->filename, "w");
   if (stream == NULL) {
     perror("Failed to open output file");
     exit(EXIT_FAILURE);
@@ -66,10 +66,10 @@ void take_file(int socket_fd) {
   }
 
   // Announce that we got the file
-  printf("Successfully took file %s\n", data->name);
+  printf("Successfully took file %s\n", data->filename);
 
   // Free malloc'd structures
-  free(data->name);
+  free(data->filename);
   free(data->data);
   free(data);
 }

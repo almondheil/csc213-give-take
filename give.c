@@ -80,9 +80,9 @@ void *receive_client_requests(void *arg) {
 
     // If the user does not match, stop this thread without exiting the program
     // (basically a failed authentication, but way lower stakes)
-    if (strcmp(req->name, target_username) != 0 && strcmp(req->name, owner_username) != 0) {
+    if (strcmp(req->username, target_username) != 0 && strcmp(req->username, owner_username) != 0) {
       free(args);
-      free(req->name);
+      free(req->username);
       free(req);
 
       // Return, stopping this thread
@@ -93,7 +93,7 @@ void *receive_client_requests(void *arg) {
     if (req->action == DATA) {
       if (send_file(client_socket_fd, data) == -1) {
         free(args);
-        free(req->name);
+        free(req->username);
         free(req);
 
         // Return, stopping this thread
@@ -102,7 +102,7 @@ void *receive_client_requests(void *arg) {
     } else if (req->action == QUIT) {
       // Free malloc'd args and request before exiting
       free(args);
-      free(req->name);
+      free(req->username);
       free(req);
 
       // Exit, stopping ALL threads
@@ -110,7 +110,7 @@ void *receive_client_requests(void *arg) {
     }
 
     // Free the request we got
-    free(req->name);
+    free(req->username);
     free(req);
   }
 }
@@ -138,7 +138,7 @@ int give_file(char *restrict target_user, char *restrict file_path,
   file_t *data = malloc(sizeof(file_t));
 
   // Set the name to the shortname of the file (without /path/to/)
-  data->name = get_shortname(file_path);
+  data->filename = get_shortname(file_path);
 
   // Read the contents of the file into the data struct we have
   if (read_file_contents(data, stream) == -1) {
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
 
     // Cancel the give
     request_t req;
-    req.name = getenv("LOGNAME");
+    req.username = getenv("LOGNAME");
     req.action = QUIT;
     int rc = send_request(socket_fd, &req);
     if (rc == -1) {

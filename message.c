@@ -8,7 +8,7 @@
 
 int send_file(int sock_fd, file_t *file_data) {
   // Send how long the data is
-  size_t name_len = sizeof(char) * strlen(file_data->name);
+  size_t name_len = sizeof(char) * strlen(file_data->filename);
   if (write(sock_fd, &name_len, sizeof(size_t)) != sizeof(size_t)) {
     return -1;
   }
@@ -23,7 +23,7 @@ int send_file(int sock_fd, file_t *file_data) {
   size_t bytes_written = 0;
   while (bytes_written < name_len) {
     // write the remaining message
-    ssize_t rc = write(sock_fd, file_data->name + bytes_written,
+    ssize_t rc = write(sock_fd, file_data->filename + bytes_written,
                        name_len - bytes_written);
 
     // if the write failed, there was an error
@@ -68,14 +68,14 @@ file_t *recv_file(int sock_fd) {
   data->size = data_size;
 
   // Read the filename
-  data->name = malloc(filename_len + 1);
+  data->filename = malloc(filename_len + 1);
   size_t bytes_read = 0;
   while (bytes_read < filename_len) {
     ssize_t rc =
-        read(sock_fd, data->name + bytes_read, filename_len - bytes_read);
+        read(sock_fd, data->filename + bytes_read, filename_len - bytes_read);
 
     if (rc <= 0) {
-      free(data->name);
+      free(data->filename);
       free(data);
       return NULL;
     }
@@ -84,7 +84,7 @@ file_t *recv_file(int sock_fd) {
   }
 
   // Null terminate the filename
-  data->name[filename_len] = '\0';
+  data->filename[filename_len] = '\0';
 
   // Read the data of the file
   data->data = malloc(data_size);
@@ -94,7 +94,7 @@ file_t *recv_file(int sock_fd) {
 
     if (rc <= 0) {
       free(data->data);
-      free(data->name);
+      free(data->filename);
       free(data);
       return NULL;
     }
@@ -108,7 +108,7 @@ file_t *recv_file(int sock_fd) {
 
 int send_request(int sock_fd, request_t *req) {
   // Send how long the name is
-  size_t name_len = sizeof(char) * strlen(req->name);
+  size_t name_len = sizeof(char) * strlen(req->username);
   if (write(sock_fd, &name_len, sizeof(size_t)) != sizeof(size_t)) {
     return -1;
   }
@@ -118,7 +118,7 @@ int send_request(int sock_fd, request_t *req) {
   while (bytes_written < name_len) {
     // write the remaining message
     ssize_t rc =
-        write(sock_fd, req->name + bytes_written, name_len - bytes_written);
+        write(sock_fd, req->username + bytes_written, name_len - bytes_written);
 
     // if the write failed, there was an error
     if (rc <= 0)
@@ -144,15 +144,15 @@ request_t *recv_request(int sock_fd) {
 
   // Create a struct to store the values we'll receive
   request_t *req = malloc(sizeof(request_t));
-  req->name = malloc(name_len + 1);
+  req->username = malloc(name_len + 1);
 
   // Read the name
   size_t bytes_read = 0;
   while (bytes_read < name_len) {
-    ssize_t rc = read(sock_fd, req->name + bytes_read, name_len - bytes_read);
+    ssize_t rc = read(sock_fd, req->username + bytes_read, name_len - bytes_read);
 
     if (rc <= 0) {
-      free(req->name);
+      free(req->username);
       free(req);
       return NULL;
     }
@@ -161,11 +161,11 @@ request_t *recv_request(int sock_fd) {
   }
 
   // Null terminate the name
-  req->name[name_len] = '\0';
+  req->username[name_len] = '\0';
 
   // Read the requested action
   if (read(sock_fd, &req->action, sizeof(action_t)) != sizeof(action_t)) {
-    free(req->name);
+    free(req->username);
     free(req);
     return NULL;
   }

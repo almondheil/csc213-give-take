@@ -2,21 +2,21 @@
 
 // File name and contents
 typedef struct {
-  char *name;    //< filename
-  size_t size;   //< size of file in bytes
-  uint8_t *data; //< file data bytes
+  char *filename;
+  size_t size;
+  uint8_t *data;
 } file_t;
 
 // Possible actions for a request
 typedef enum {
-  DATA, //< send file data
-  QUIT, //< stop hosting
+  DATA,
+  QUIT
 } action_t;
 
 // Action request, including requester username
 typedef struct {
-  char *name;      //< username of requester
-  action_t action; //< requested action
+  char *username;
+  action_t action;
 } request_t;
 
 /**
