@@ -1,6 +1,5 @@
 CC     := clang
 CFLAGS := -Wall -Werror -g -fsanitize=address
-#CFLAGS := -O3
 
 .PHONY: all clean zip format
 
@@ -16,7 +15,7 @@ clean:
 	rm -f give take give-take.zip
 
 zip: clean
-	zip -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags LICENSE
+	zip -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags LICENSE watch-give.sh
 
 format:
 	clang-format -i --style=file $(wildcard *.c) $(wildcard *.h)
