@@ -54,13 +54,18 @@ char *get_shortname(char *path) {
 }
 
 bool user_exists(char *name) {
+  // Get the user by name
   struct passwd *user = getpwnam(name);
+
+  // getpwnam returns NULL if the user does not exist
   return (user != NULL);
 }
 
 char *get_username() {
+  // Get the effective uid
   uid_t uid = geteuid();
 
+  // Find the user associated with that uid
   struct passwd *pw = getpwuid(uid);
   if (pw == NULL) {
     return NULL;
