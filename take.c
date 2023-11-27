@@ -88,11 +88,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Could not determine your username");
     exit(EXIT_FAILURE);
   }
-  // // TODO: Later, don't allow taking from yourself
-  // if (strcmp(take_username, argv[1]) == 0) {
-  // 	fprintf(stderr, "Cannot take a file from yourself\n");
-  // 	exit(EXIT_FAILURE);
-  // }
 
   // Make space for the worst case hostname length. argv[1] cannot entirely be a
   // hostname, so this allocates extra space, but that's okay.

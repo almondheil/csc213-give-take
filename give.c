@@ -259,13 +259,6 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
-    // TODO: UNCOMMENT when a user can't give to themself
-    // // Check the user is not giving to themself
-    // if (strcmp(get_username(), argv[1]) == 0) {
-    // 	fprintf(stderr, "Cannot give a file to yourself!\n");
-    // 	exit(EXIT_FAILURE);
-    // }
-
     // Check argv[2] exists
     if (access(argv[2], F_OK) != 0) {
       fprintf(stderr, "File %s does not exist!\n", argv[2]);
