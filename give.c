@@ -75,6 +75,9 @@ void *receive_client_requests(void *arg) {
     if (req == NULL) {
       free(args);
 
+      // Close the client socket--something went wrong
+      close(client_socket_fd);
+
       // Return, stopping this thread
       return NULL;
     }
@@ -85,6 +88,9 @@ void *receive_client_requests(void *arg) {
       free(args);
       free(req->username);
       free(req);
+
+      // Close the client socket--something went wrong
+      close(client_socket_fd);
 
       // Exit, stopping ALL threads
       exit(EXIT_SUCCESS);
@@ -98,6 +104,9 @@ void *receive_client_requests(void *arg) {
         free(req->username);
         free(req);
 
+        // Close the client socket--something went wrong
+        close(client_socket_fd);
+
         // Return, stopping this thread
         return NULL;
       }
@@ -108,6 +117,9 @@ void *receive_client_requests(void *arg) {
       free(args);
       free(req->username);
       free(req);
+
+      // Close the client socket since they're not authenticated
+      close(client_socket_fd);
 
       // Exit, stopping ALL threads
       return NULL;
