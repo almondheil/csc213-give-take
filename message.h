@@ -9,8 +9,9 @@ typedef struct {
 
 // Possible actions for a request
 typedef enum {
-  DATA,
-  QUIT
+  SEND_DATA,
+  DONE,
+  CANCEL
 } action_t;
 
 // Action request, including requester username

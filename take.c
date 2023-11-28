@@ -16,7 +16,7 @@ void take_file(int socket_fd) {
   // Send a request for the data to the server side
   request_t req;
   req.username = get_username();
-  req.action = DATA;
+  req.action = SEND_DATA;
   int rc = send_request(socket_fd, &req);
   if (rc == -1) {
     perror("Failed to send file request");
@@ -39,7 +39,7 @@ void take_file(int socket_fd) {
 
   // Now that we're sure that the file does not already exist,
   // tell the host to quit and stop serving the file
-  req.action = QUIT;
+  req.action = DONE;
   rc = send_request(socket_fd, &req);
   if (rc == -1) {
     perror("Failed to send quit request");

@@ -13,7 +13,7 @@
 typedef struct {
   int client_socket_fd;  //< socket fd of connected client
   file_t *data;          //< pointer to file data
-  char *target_usernamename; //< username of the intended client
+  char *target_username; //< username of the intended client
   char *owner_username;  //< username of the user who initialized the get
 } comm_args_t;
 
@@ -66,7 +66,7 @@ void *receive_client_requests(void *arg) {
   comm_args_t *args = (comm_args_t *)arg;
   int client_socket_fd = args->client_socket_fd;
   file_t *data = args->data;
-  char *target_usernamename = args->target_usernamename;
+  char *target_username = args->target_username;
   char *owner_username = args->owner_username;
 
   while (true) {
@@ -79,20 +79,21 @@ void *receive_client_requests(void *arg) {
       return NULL;
     }
 
-    // If the user does not match, stop this thread without exiting the program
-    // (basically a failed authentication, but way lower stakes)
-    if (strcmp(req->username, target_usernamename) != 0 && strcmp(req->username, owner_username) != 0) {
+    // Terminate the server if owner sends CANCEL or target sends DONE
+    if ((req->action == CANCEL && strcmp(req->username, owner_username) == 0) ||
+       (req->action == DONE && strcmp(req->username, target_username) == 0)) {
       free(args);
       free(req->username);
       free(req);
 
-      // Return, stopping this thread
-      return NULL;
+      // Exit, stopping ALL threads
+      exit(EXIT_SUCCESS);
     }
 
-    // Take the requested action since the username matches
-    if (req->action == DATA) {
-      if (send_file(client_socket_fd, data) == -1) {
+    // Send the data if the target sends SEND_DATA
+    else if (req->action == SEND_DATA && strcmp(req->username, target_username) == 0) {
+      int rc = send_file(client_socket_fd, data);
+      if (rc == -1) {
         free(args);
         free(req->username);
         free(req);
@@ -100,14 +101,16 @@ void *receive_client_requests(void *arg) {
         // Return, stopping this thread
         return NULL;
       }
-    } else if (req->action == QUIT) {
-      // Free malloc'd args and request before exiting
+    }
+
+    // Otherwise, disconnect from the client
+    else {
       free(args);
       free(req->username);
       free(req);
 
       // Exit, stopping ALL threads
-      exit(EXIT_SUCCESS);
+      return NULL;
     }
 
     // Free the request we got
@@ -167,7 +170,7 @@ int give_file(char *restrict target_username, char *restrict file_path,
     comm_args_t *args = malloc(sizeof(comm_args_t));
     args->client_socket_fd = client_socket_fd;
     args->data = data;
-    args->target_usernamename = target_username;
+    args->target_username = target_username;
     args->owner_username = get_username();
 
     // Spin up a thread to communicate with this client
@@ -235,7 +238,7 @@ int main(int argc, char **argv) {
     // Cancel the give
     request_t req;
     req.username = get_username();
-    req.action = QUIT;
+    req.action = CANCEL;
     int rc = send_request(socket_fd, &req);
     if (rc == -1) {
       perror("Failed to send quit request");
