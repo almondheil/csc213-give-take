@@ -1,3 +1,6 @@
+// message.h
+// Modified from message.h used in the networking exercise
+
 #include <stdint.h>
 
 // File name and contents
