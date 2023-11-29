@@ -1,6 +1,5 @@
 // socket.h
-// Unmodified from socket.h as used in the networking exercise,
-// except to make the functions not static.
+// Unmodified from socket.h as used in the networking exercise.
 
 #if !defined(SOCKET_H)
 #define SOCKET_H
