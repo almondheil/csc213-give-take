@@ -135,12 +135,12 @@ void *receive_client_requests(void *arg) {
  * Give a file to a target user through a network socket.
  *
  * \param target_username  User to send the file.
- * \param file_path    Full path to the file.
- * \param socket_fd    Network socket to send through.
- * \return             0 if there are no errors, -1 if there are errors.
- *                     Sets errno on failure.
+ * \param file_path        Full path to the file.
+ * \param socket_fd        Network socket to send through.
+ * \return                 0 if there are no errors, -1 if there are errors.
+ *                         Sets errno on failure.
  */
-int give_file(char *restrict target_username, char *restrict file_path,
+int host_file(char *restrict target_username, char *restrict file_path,
               int socket_fd) {
   /* Prepare to send by storing the data of the file */
 
@@ -326,17 +326,22 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
+    // TODO: Mark this give in the owner's ~/.gives file
+    // info we need: target user, filename, port number
+    // pid may also be useful? who knows
+
     // Give the user that file.
-    int rc = give_file(argv[1], argv[2], server_socket_fd);
+    int rc = host_file(argv[1], argv[2], server_socket_fd);
     if (rc == -1) {
-      // give_file prints its own (more descriptive) error messages
+      // host_file prints its own (more descriptive) error messages
       exit(EXIT_FAILURE);
     }
+
+    // TODO: Remove this give from the owner's ~/.gives file
 
     // Close the socket once the transfer is complete
     close(server_socket_fd);
   }
-
 
   return 0;
 }
