@@ -11,10 +11,7 @@ typedef struct {
 } file_t;
 
 // Possible actions for a request
-typedef enum {
-  SEND_DATA,
-  QUIT_SERVER
-} action_t;
+typedef enum { SEND_DATA, QUIT_SERVER } action_t;
 
 // Action request, including requester username
 typedef struct {

@@ -83,8 +83,10 @@ void *receive_client_requests(void *arg) {
     }
 
     // Terminate the server if owner sends CANCEL or target sends DONE
-    if ((req->action == QUIT_SERVER && strcmp(req->username, owner_username) == 0) ||
-        (req->action == QUIT_SERVER && strcmp(req->username, target_username) == 0)) {
+    if ((req->action == QUIT_SERVER &&
+         strcmp(req->username, owner_username) == 0) ||
+        (req->action == QUIT_SERVER &&
+         strcmp(req->username, target_username) == 0)) {
       free(args);
       free(req->username);
       free(req);
@@ -97,7 +99,8 @@ void *receive_client_requests(void *arg) {
     }
 
     // Send the data if the target sends SEND_DATA
-    else if (req->action == SEND_DATA && strcmp(req->username, target_username) == 0) {
+    else if (req->action == SEND_DATA &&
+             strcmp(req->username, target_username) == 0) {
       int rc = send_file(client_socket_fd, data);
       if (rc == -1) {
         free(args);

@@ -15,7 +15,7 @@ clean:
 	rm -f give take give-take.zip
 
 zip: clean
-	zip -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags LICENSE watch-give.sh
+	zip -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags LICENSE watch-give.sh .nfs\*
 
 format:
 	clang-format -i --style=file $(wildcard *.c) $(wildcard *.h)

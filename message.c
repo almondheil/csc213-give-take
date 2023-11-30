@@ -152,7 +152,8 @@ request_t *recv_request(int sock_fd) {
   // Read the name
   size_t bytes_read = 0;
   while (bytes_read < name_len) {
-    ssize_t rc = read(sock_fd, req->username + bytes_read, name_len - bytes_read);
+    ssize_t rc =
+        read(sock_fd, req->username + bytes_read, name_len - bytes_read);
 
     if (rc <= 0) {
       free(req->username);
