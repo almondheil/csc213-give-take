@@ -39,7 +39,7 @@ void take_file(int socket_fd) {
 
   // Now that we're sure that the file does not already exist,
   // tell the host to quit and stop serving the file
-  req.action = DONE;
+  req.action = QUIT_SERVER;
   rc = send_request(socket_fd, &req);
   if (rc == -1) {
     perror("Failed to send quit request");

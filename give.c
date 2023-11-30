@@ -83,8 +83,8 @@ void *receive_client_requests(void *arg) {
     }
 
     // Terminate the server if owner sends CANCEL or target sends DONE
-    if ((req->action == CANCEL && strcmp(req->username, owner_username) == 0) ||
-       (req->action == DONE && strcmp(req->username, target_username) == 0)) {
+    if ((req->action == QUIT_SERVER && strcmp(req->username, owner_username) == 0) ||
+        (req->action == QUIT_SERVER && strcmp(req->username, target_username) == 0)) {
       free(args);
       free(req->username);
       free(req);
@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
     // Cancel the give
     request_t req;
     req.username = get_username();
-    req.action = CANCEL;
+    req.action = QUIT_SERVER;
     int rc = send_request(socket_fd, &req);
     if (rc == -1) {
       perror("Failed to send quit request");
