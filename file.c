@@ -30,8 +30,6 @@ void free_file(file_t *file) {
 }
 
 int read_regular(char *path, file_t *file) {
-  printf("LOG: reading regular file %s\n", path);
-
   // try to open the file
   FILE *stream = fopen(path, "r");
   if (stream == NULL) {
@@ -68,8 +66,6 @@ int read_regular(char *path, file_t *file) {
 }
 
 int read_directory(char *path, file_t *file) {
-  printf("LOG: reading directory %s\n", path);
-
   DIR *dir = opendir(path);
   if (dir == NULL) {
     perror("failed to open directory");
@@ -250,6 +246,12 @@ int write_directory(char *path, file_t *file) {
   strcpy(dir_path, path);
   strcat(dir_path, file->name);
   strcat(dir_path, "/");
+
+  if (access(dir_path, F_OK) == 0) {
+    fprintf(stderr, "refusing to overwrite existing directory %s\n", dir_path);
+    free(dir_path);
+    return -1;
+  }
 
   // Attempt to create that directory
   // mode 0777 means we leave dir permissions up to the user's umask
