@@ -7,54 +7,77 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "file.h"
 #include "message.h"
 
-int send_file(int sock_fd, file_t *file_data) {
-  // Send how long the data is
-  size_t name_len = sizeof(char) * strlen(file_data->filename);
+int send_file(int sock_fd, file_t *file) {
+  // Send the type of the file
+  if (write(sock_fd, &file->type, sizeof(filetype)) != sizeof(filetype)) {
+    return -1;
+  }
+
+  // Send the length of the name
+  size_t name_len = sizeof(char) * strlen(file->name);
   if (write(sock_fd, &name_len, sizeof(size_t)) != sizeof(size_t)) {
     return -1;
   }
 
-  // Send how many bytes the file is
-  size_t data_size = file_data->size;
-  if (write(sock_fd, &data_size, sizeof(size_t)) != sizeof(size_t)) {
+  // Send file->size (either data size, or number of entries
+  if (write(sock_fd, &file->size, sizeof(size_t)) != sizeof(size_t)) {
     return -1;
   }
 
-  // Send the name of the file
+  // Send the actual name
   size_t bytes_written = 0;
   while (bytes_written < name_len) {
-    // write the remaining message
-    ssize_t rc = write(sock_fd, file_data->filename + bytes_written,
+    // Write the remaining message
+    ssize_t rc = write(sock_fd, file->name + bytes_written,
                        name_len - bytes_written);
 
     // if the write failed, there was an error
-    if (rc <= 0)
+    if (rc <= 0) {
       return -1;
+    }
 
     bytes_written += rc;
   }
 
-  // Send the data of the file
-  bytes_written = 0;
-  while (bytes_written < data_size) {
-    // write the remaining message
-    ssize_t rc = write(sock_fd, file_data->data + bytes_written,
-                       data_size - bytes_written);
+  // Send the file contents over the network, depending on type
+  if (file->type == F_REG) {
+    // Regular files need only send their data across
 
-    // if the write failed, there was an error
-    if (rc <= 0)
-      return -1;
+    bytes_written = 0;
+    while (bytes_written < file->size) {
+      // write the remaining message
+      ssize_t rc = write(sock_fd, file->contents.data + bytes_written,
+          file->size - bytes_written);
 
-    bytes_written += rc;
+      // if the write failed, there was an error
+      if (rc <= 0)
+        return -1;
+
+      bytes_written += rc;
+    }
+  } else {
+    // For directories, recursively call send_file on each entry
+    for (int i = 0; i < file->size; i++) {
+      if (send_file(sock_fd, file->contents.entries[i]) == -1) {
+        return -1;
+      }
+    }
   }
 
   return 0;
 }
 
 file_t *recv_file(int sock_fd) {
-  // Read the size of the filename
+  // Read the type of the file
+  filetype type;
+  if (read(sock_fd, &type, sizeof(filetype)) != sizeof(filetype)) {
+    return NULL;
+  }
+
+  // Read the length of the filename
   size_t filename_len;
   if (read(sock_fd, &filename_len, sizeof(size_t)) != sizeof(size_t)) {
     return NULL;
@@ -66,47 +89,74 @@ file_t *recv_file(int sock_fd) {
     return NULL;
   }
 
-  // Create a data
-  file_t *data = malloc(sizeof(file_t));
-  data->size = data_size;
+  // Create space to store the received file
+  file_t *file = malloc(sizeof(file_t));
+  file->size = data_size;
+  file->type = type;
 
-  // Read the filename
-  data->filename = malloc(filename_len + 1);
+  // Make space to store the filename
+  file->name = malloc(filename_len + 1);
+  if (file->name == NULL) {
+    perror("could not allocate space to receive filename");
+    free_file(file);
+    return NULL;
+  }
+
+  // Read the filename of the file
   size_t bytes_read = 0;
   while (bytes_read < filename_len) {
-    ssize_t rc =
-        read(sock_fd, data->filename + bytes_read, filename_len - bytes_read);
+    ssize_t rc = read(sock_fd, file->name + bytes_read, filename_len - bytes_read);
 
     if (rc <= 0) {
-      free(data->filename);
-      free(data);
+      free_file(file);
       return NULL;
     }
 
     bytes_read += rc;
   }
+  file->name[filename_len] = '\0';
 
-  // Null terminate the filename
-  data->filename[filename_len] = '\0';
+  // Read the contents of the file
+  if (file->type == F_REG) {
+    // For a regular file, read into file->contents.data
 
-  // Read the data of the file
-  data->data = malloc(data_size);
-  bytes_read = 0;
-  while (bytes_read < data_size) {
-    ssize_t rc = read(sock_fd, data->data + bytes_read, data_size - bytes_read);
-
-    if (rc <= 0) {
-      free(data->data);
-      free(data->filename);
-      free(data);
+    // Make space to store the file contents
+    file->contents.data = malloc(data_size);
+    if (file->contents.data == NULL) {
+      perror("failed to allocate space to receive file data");
+      free_file(file);
       return NULL;
     }
 
-    bytes_read += rc;
+    // Read the contents into our file struct
+    bytes_read = 0;
+    while (bytes_read < data_size) {
+      ssize_t rc = read(sock_fd, file->contents.data + bytes_read,
+          data_size - bytes_read);
+
+      if (rc <= 0) {
+        free_file(file);
+        return NULL;
+      }
+
+      bytes_read += rc;
+    }
+  } else {
+    // For a directory, make space for file->size number of entries
+    file->contents.entries = malloc(sizeof(file_t *) * file->size);
+
+    // Then recursively receive each of those entries
+    for (int i = 0; i < file->size; i++) {
+      file->contents.entries[i] = recv_file(sock_fd);
+      if (file->contents.entries[i] == NULL) {
+        free_file(file);
+        return NULL;
+      }
+    }
   }
 
-  // Return the filled out struct
-  return data;
+  // All went well? Return that file.
+  return file;
 }
 
 int send_request(int sock_fd, request_t *req) {

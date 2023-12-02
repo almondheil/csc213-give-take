@@ -290,22 +290,4 @@ int write_file(char *path, file_t *file) {
   }
 
   return 0;
-  // TODO: Refuse to work on a path that already exists in any form.
-}
-
-int main(int argc, char **argv) {
-  if (argc != 2) {
-    fprintf(stderr, "gimme a filename\n");
-    return 1;
-  }
-
-  // Read the whole file
-  file_t *f = read_file(argv[1]);
-
-  // Write it over to the other area :)
-  write_file("../", f);
-
-  free_file(f);
-
-  return 0;
 }

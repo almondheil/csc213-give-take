@@ -24,21 +24,20 @@ void take_file(int socket_fd) {
   }
 
   // Try to receive the data now
-  file_t *data = recv_file(socket_fd);
-  if (data == NULL) {
+  file_t *file = recv_file(socket_fd);
+  if (file == NULL) {
     perror("Failed to receive file");
     exit(EXIT_FAILURE);
   }
 
-  // Refuse to overwrite the file if it already exists
-  if (access(data->filename, F_OK) == 0) {
-    fprintf(stderr, "File %s already exists! Cancelling transfer.\n",
-            data->filename);
-    exit(EXIT_FAILURE);
+  // Attempt to write the file to the current directory
+  // TODO: more glamorous way to call write_file? pwd?
+  if (write_file("./", file) == -1) {
+    printf("OYYY TODO ERROR MESSAGE GOOD\n");
+    return; // TODO FREE STUFF TODO GOOD ERROR MESSAGE
   }
 
-  // Now that we're sure that the file does not already exist,
-  // tell the host to quit and stop serving the file
+  // Once we successfully save the file, tell the server to quit
   req.action = QUIT_SERVER;
   rc = send_request(socket_fd, &req);
   if (rc == -1) {
@@ -46,32 +45,11 @@ void take_file(int socket_fd) {
     exit(EXIT_FAILURE);
   }
 
-  // Open the file locally
-  FILE *stream = fopen(data->filename, "w");
-  if (stream == NULL) {
-    perror("Failed to open output file");
-    exit(EXIT_FAILURE);
-  }
-
-  // Write the transferred data into the new file
-  for (int i = 0; i < data->size; i++) {
-    char ch = (char)data->data[i];
-    fputc(ch, stream);
-  }
-
-  // Save and close the file
-  if (fclose(stream)) {
-    perror("Failed to close output file");
-    exit(EXIT_FAILURE);
-  }
-
-  // Announce that we got the file
-  printf("Successfully took file %s\n", data->filename);
+  // Announce that we got the transfer across
+  printf("Successfully took %s\n", file->name);
 
   // Free malloc'd structures
-  free(data->filename);
-  free(data->data);
-  free(data);
+  free_file(file);
 }
 
 // Entry point to the program.
