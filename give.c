@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,21 @@ typedef struct {
   char *target_username; //< username of the intended client
   char *owner_username;  //< username of the user who initialized the get
 } comm_args_t;
+
+/**
+ * Determine whether a user exists on this system.
+ *
+ * \param name  Username to test
+ * \return      true if the user exists, false otherwise
+ */
+bool user_exists(char *name) {
+  // Get the user by name
+  struct passwd *user = getpwnam(name);
+
+  // getpwnam returns NULL if the user does not exist
+  return (user != NULL);
+}
+
 
 /**
  * Receive requests from a client and act on them.
