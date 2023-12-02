@@ -1,40 +1,13 @@
-// from myls.c
-// todo: remove unneeded .h files
 #include <dirent.h>
-#include <errno.h>
-#include <grp.h>
-#include <pwd.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
-// todo: do i need this? for uint8_t
-#include <stdint.h>
-
+#include "file.h"
 #include "utils.h"
-// ^ for get_shortname(path)
-
-typedef struct file {
-  // a file can be normal (containing bytes) or directory (containing more files)
-  enum { F_REG, F_DIR } type;
-
-  // both normal and directory have a name and size
-  char *name;
-  size_t size;
-
-  union {
-    // f_reg only
-    // size is interpreted as the size of file_data in bytes
-    uint8_t *data;
-
-    // f_dir only
-    // size is interpreted as the number of directory entries
-    struct file **entries;
-  } contents;
-} file_t;
 
 void free_file(file_t *file) {
   free(file->name);
@@ -55,8 +28,6 @@ void free_file(file_t *file) {
   }
   free(file);
 }
-
-file_t *read_path(char *path);
 
 int read_regular(char *path, file_t *file) {
   printf("LOG: reading regular file %s\n", path);
@@ -117,7 +88,7 @@ int read_directory(char *path, file_t *file) {
 
     // Malloc space for the path to the next entry
     int next_path_len = strlen(path) + strlen(entry->d_name);
-    char *next_path = malloc(next_path_len + 1);
+    char *next_path = malloc(sizeof(char) * (next_path_len + 1));
     if (next_path == NULL) {
       perror("failed to allocate space for path");
       return -1;
@@ -131,8 +102,8 @@ int read_directory(char *path, file_t *file) {
     file->contents.entries = realloc(file->contents.entries,
         (file->size + 1) * sizeof(file_t));
 
-    // Set that entry by recursively calling read_path on it
-    file->contents.entries[file->size] = read_path(next_path);
+    // Set that entry by recursively calling read_file on it
+    file->contents.entries[file->size] = read_file(next_path);
 
     // Free the malloc'd path
     free(next_path);
@@ -151,7 +122,7 @@ int read_directory(char *path, file_t *file) {
   return 0;
 }
 
-file_t *read_path(char *path) {
+file_t *read_file(char *path) {
   // stat the file, also checking that it exists
   struct stat st;
   if (stat(path, &st) == -1) {
@@ -168,7 +139,6 @@ file_t *read_path(char *path) {
   }
 
   // Store the name, trimming off the start of the path
-  // TODO: should get_shortname go in here? depends if anywhere else uses it
   new->name = strdup(get_shortname(path));
   if (new->name == NULL) {
     perror("could not allocate file name");
@@ -224,15 +194,116 @@ file_t *read_path(char *path) {
   }
 }
 
+int write_regular(char *path, file_t *file) {
+  // Construct the path to the file
+  int file_path_len = strlen(path) + strlen(file->name);
+  char *file_path = malloc(sizeof(char) * (file_path_len + 1));
+  if (file_path == NULL) {
+    perror("failed to allocate space for filename");
+    return -1;
+  }
+  strcpy(file_path, path);
+  strcat(file_path, file->name);
+
+  // If something exists there, something went wrong
+  if (access(file_path, F_OK) == 0) {
+    fprintf(stderr, "refusing to overwrite existing file %s\n", file_path);
+    free(file_path);
+    return -1;
+  }
+
+  // Open that file for writing
+  FILE *stream = fopen(file_path, "w");
+  if (stream == NULL) {
+    perror("failed to open file");
+    free(file_path);
+    return -1;
+  }
+
+  // Write the data into that file
+  if (fwrite(file->contents.data, 1, file->size, stream) != file->size) {
+    perror("failed to write file contents");
+    free(file_path);
+    return -1;
+  }
+
+  // Close the file
+  if (fclose(stream)) {
+    perror("failed to close file");
+    free(file_path);
+    return -1;
+  }
+
+  // All went well!
+  free(file_path);
+  return 0;
+}
+
+int write_directory(char *path, file_t *file) {
+  // Construct the path to the directory
+  int dir_path_len = strlen(path) + strlen(file->name) + strlen("/");
+  char *dir_path = malloc(sizeof(char) * (dir_path_len + 1));
+  if (dir_path == NULL) {
+    perror("failed to allocate space for filename");
+    return -1;
+  }
+  strcpy(dir_path, path);
+  strcat(dir_path, file->name);
+  strcat(dir_path, "/");
+
+  // Attempt to create that directory
+  // mode 0777 means we leave dir permissions up to the user's umask
+  if (mkdir(dir_path, 0777) == -1) {
+    perror("failed to create directory");
+    free(dir_path);
+    return -1;
+  }
+
+  // For all the directory entries, attempt to write them as well
+  for (int i = 0; i < file->size; i++) {
+    int rc = write_file(dir_path, file->contents.entries[i]);
+    if (rc == -1) {
+      free(dir_path);
+      return -1;
+    }
+  }
+
+  // All done!
+  free(dir_path);
+  return 0;
+}
+
+int write_file(char *path, file_t *file) {
+  switch (file->type) {
+    case F_REG:
+      if (write_regular(path, file) == -1) {
+        return -1;
+      }
+      break;
+    case F_DIR:
+      if (write_directory(path, file) == -1) {
+        return -1;
+      }
+      break;
+  }
+
+  return 0;
+  // TODO: Refuse to work on a path that already exists in any form.
+}
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     fprintf(stderr, "gimme a filename\n");
     return 1;
   }
 
-  file_t *f = read_path(argv[1]);
+  // Read the whole file
+  file_t *f = read_file(argv[1]);
+
+  // Write it over to the other area :)
+  write_file("../", f);
+
   free_file(f);
 
-  printf("I mean it didn't crash\n");
   return 0;
 }

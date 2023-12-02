@@ -5,6 +5,10 @@ CFLAGS := -Wall -g -fsanitize=address
 
 all: give take
 
+# TODO remove this rule
+file: file.c utils.c
+	${CC} ${CFLAGS} -o $@ $^
+
 give: give.c message.c utils.c
 	${CC} ${CFLAGS} -lpthread -o $@ $^
 
