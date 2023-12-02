@@ -49,6 +49,13 @@ void free_file(file_t *file) {
   free(file);
 }
 
+/**
+ * Read a regular file into a pointer.
+ *
+ * \param path  Path to the file
+ * \param file  Pointer to file struct. Data will be filled out.
+ * \return      0 if everything went well, -1 on error
+ */
 int read_regular(char *path, file_t *file) {
   // try to open the file
   FILE *stream = fopen(path, "r");
@@ -85,6 +92,13 @@ int read_regular(char *path, file_t *file) {
   return 0;
 }
 
+/**
+ * Read a directory into a pointer, and all the files inside recursively.
+ *
+ * \param path  Path to the directory
+ * \param file  Struct to read the file into
+ * \return      0 if everything went well, -1 on error
+ */
 int read_directory(char *path, file_t *file) {
   DIR *dir = opendir(path);
   if (dir == NULL) {
@@ -210,6 +224,14 @@ file_t *read_file(char *path) {
   }
 }
 
+/**
+ * Write a regular file to a spot on disk. Writes to the path specified by
+ * strcat(path, file->name).
+ *
+ * \param path  Path to write the file to.
+ * \param file  File data to write.
+ * \return      0 if everything went well, -1 on error
+ */
 int write_regular(char *path, file_t *file) {
   // Construct the path to the file
   int file_path_len = strlen(path) + strlen(file->name);
@@ -255,6 +277,14 @@ int write_regular(char *path, file_t *file) {
   return 0;
 }
 
+/**
+ * Write a directory to a spot on disk, and all the files inside of it
+ * recursively.
+ *
+ * \param path  Path to write the directory to.
+ * \param file  File data to write.
+ * \return      0 if everything went well, -1 on error
+ */
 int write_directory(char *path, file_t *file) {
   // Construct the path to the directory
   int dir_path_len = strlen(path) + strlen(file->name) + strlen("/");
