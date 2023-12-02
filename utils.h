@@ -1,3 +1,9 @@
+/**
+ * utils.h
+ *
+ * Common utilities used by both give and take
+ */
+
 #pragma once
 
 /**

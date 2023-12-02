@@ -1,5 +1,9 @@
-// message.h
-// Modified from message.h used in the networking exercise
+/**
+ * message.h
+ *
+ * Send messages and requests as messages over the network.
+ * Adapted from message.h used in in-class networking exercises.
+ */
 
 #include <stdint.h>
 

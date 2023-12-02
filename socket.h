@@ -1,5 +1,9 @@
-// socket.h
-// Unmodified from socket.h as used in the networking exercise.
+/**
+ * socket.h
+ *
+ * Manage web sockets through a slightly easier interface.
+ * Unmodified from socket.h as used in networking exercises in class.
+ */
 
 #if !defined(SOCKET_H)
 #define SOCKET_H
@@ -44,7 +48,7 @@ static int socket_connect(char *server_name, unsigned short port) {
   // Copy the server address info returned by gethostbyname into the address
   memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
-  // Connect to the server
+  // Connect to the web server
   if (connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in))) {
     close(fd);
     return -1;
