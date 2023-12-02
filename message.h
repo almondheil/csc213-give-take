@@ -3,15 +3,13 @@
 
 #include <stdint.h>
 
-// File name and contents
-typedef struct {
-  char *filename;
-  size_t size;
-  uint8_t *data;
-} file_t;
+#include "file.h"
 
 // Possible actions for a request
-typedef enum { SEND_DATA, QUIT_SERVER } action_t;
+typedef enum {
+  SEND_DATA,
+  QUIT_SERVER,
+} action_t;
 
 // Action request, including requester username
 typedef struct {

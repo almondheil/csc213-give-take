@@ -18,43 +18,6 @@ typedef struct {
 } comm_args_t;
 
 /**
- * Read the contents of a file into a data struct.
- *
- * \param file_data  Pointer to a file_t struct. Its data and size fields will
- *                   be overwritten, but not its name field.
- * \param stream     File to read.
- * \return           0 on success, -1 on failure.
- */
-int read_file_contents(file_t *file_data, FILE *stream) {
-  // Seek to the end of the file so we can get its size
-  if (fseek(stream, 0, SEEK_END) != 0) {
-    return -1;
-  }
-
-  // Find the size
-  file_data->size = ftell(stream);
-
-  // Seek back to the start so we can read it
-  if (fseek(stream, 0, SEEK_SET) != 0) {
-    return -1;
-  }
-
-  // Allocate space, and make sure everything fits
-  file_data->data = malloc(file_data->size);
-  if (file_data->data == NULL) {
-    return -1;
-  }
-
-  // Read the file data into the malloced space
-  if (fread(file_data->data, 1, file_data->size, stream) != file_data->size) {
-    errno = EFBIG;
-    return -1;
-  }
-
-  return 0;
-}
-
-/**
  * Receive requests from a client and act on them.
  *
  * \param arg  Pointer to a malloc'd comm_args_t struct filled out with correct
@@ -145,32 +108,8 @@ void *receive_client_requests(void *arg) {
  */
 int host_file(char *restrict target_username, char *restrict file_path,
               int socket_fd) {
-  /* Prepare to send by storing the data of the file */
-
-  // Open the file
-  FILE *stream = fopen(file_path, "r");
-  if (stream == NULL) {
-    perror("Failed to open file");
-    return -1;
-  }
-
-  // Set up a file_t with the right filename
-  file_t *data = malloc(sizeof(file_t));
-
-  // Set the name to the shortname of the file (without /path/to/)
-  data->filename = get_shortname(file_path);
-
-  // Read the contents of the file into the data struct we have
-  if (read_file_contents(data, stream) == -1) {
-    perror("Failed to read file contents");
-    return -1;
-  }
-
-  // Close the file now, we have its data stored
-  if (fclose(stream)) {
-    perror("Failed to close file after reading");
-    return -1;
-  }
+  // Read that file into memory
+  file_t *file = read_file(file_path);
 
   // Accept new connections while the server is running
   while (true) {
@@ -184,7 +123,7 @@ int host_file(char *restrict target_username, char *restrict file_path,
     // They will be freed when the thread exits
     comm_args_t *args = malloc(sizeof(comm_args_t));
     args->client_socket_fd = client_socket_fd;
-    args->data = data;
+    args->data = file;
     args->target_username = target_username;
     args->owner_username = get_username();
 
@@ -197,8 +136,7 @@ int host_file(char *restrict target_username, char *restrict file_path,
   }
 
   // Free malloc'd structures
-  free(data->data);
-  free(data);
+  free_file(file);
   return 0;
 }
 
@@ -283,14 +221,14 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
-    // Check argv[2] is a regular file, not something else
+    // Check argv[2] is a supported type of file, not something else
     struct stat st;
     if (stat(argv[2], &st) == -1) {
       perror("Could not stat file");
       exit(EXIT_FAILURE);
     }
-    if (!S_ISREG(st.st_mode)) {
-      fprintf(stderr, "Can only give a regular file.\n");
+    if (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode)) {
+      fprintf(stderr, "Can only give a regular file or a directory.\n");
       exit(EXIT_FAILURE);
     }
 
