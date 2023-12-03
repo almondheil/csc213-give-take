@@ -123,10 +123,10 @@ int remove_give_status(char *host, unsigned int port) {
     free(to_modify);
   }
 
-  // Close both files
+  // Save and close both files
   if (fclose(original)) {
     perror("failed to close original status file");
-    fclose(copy); //< attempt, even though it could fail
+    fclose(copy); //< attempt to close copy, even though it could fail
     return -1;
   }
   if (fclose(copy)) {
@@ -137,11 +137,14 @@ int remove_give_status(char *host, unsigned int port) {
   // Delete the original and replace it with the copy
   if (unlink(path) == -1) {
     perror("failed to delete original file");
-    fclose(copy);
+    free(temp_path);
+    free(path);
     return -1;
   }
   if (rename(temp_path, path) == -1) {
     perror("failed to rename old file to new file");
+    free(temp_path);
+    free(path);
     return -1;
   }
 
@@ -202,6 +205,7 @@ void print_give_status() {
 
   if (fclose(stream)) {
     perror("failed to close status file");
+    free(path);
     return;
   }
 
