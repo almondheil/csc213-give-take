@@ -163,7 +163,7 @@ none. It does not take any parameters to customize the behavior.
 ### Take a file or directory that has been given
 
 ```
-take [HOST:]PORT
+take [HOST:]PORT [NAME]
 ```
 
 On success, this command will print that the file or directory was successfully taken.
@@ -181,6 +181,10 @@ Parameters are as follows:
 
 - `PORT` is a required network parameter. It specifies the port to attempt to take
 	the file or directory through.
+
+- `NAME` is an optional parameter. If provided, it modifies the name of the
+		received file or directory to itself. Otherwise, it will default to whatever
+		name the file had when it was given.
 
 # Notes
 

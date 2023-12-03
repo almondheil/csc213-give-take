@@ -12,8 +12,10 @@
  * Take a file through a network socket.
  *
  * \param socket_fd  File descriptor of the open network socket.
+ * \param save_name  Name to save the file under, or NULL if the default name
+ *                   should be used.
  */
-void take_file(int socket_fd) {
+void take_file(int socket_fd, char *save_name) {
   // Send a request for the data to the server side
   request_t req;
   req.username = get_username();
@@ -35,6 +37,12 @@ void take_file(int socket_fd) {
     exit(EXIT_FAILURE);
   }
 
+  // If a save name was provided, overwrite the default it was sent with
+  char *original_name = file->name;
+  if (save_name != NULL) {
+    file->name = save_name;
+  }
+
   // Attempt to write the file to the current directory
   if (write_file("./", file) == -1) {
     free_file(file);
@@ -53,6 +61,10 @@ void take_file(int socket_fd) {
   // Announce that we got the transfer across
   printf("Successfully took %s\n", file->name);
 
+  // Swap in the original name of the file in case we changed it when
+  // writing the file to disk (needed to make free_file clean up properly)
+  file->name = original_name;
+
   // Free malloc'd structures
   free_file(file);
 }
@@ -60,8 +72,8 @@ void take_file(int socket_fd) {
 // Entry point to the program.
 int main(int argc, char **argv) {
   // Make sure there are the right number of parameters
-  if (argc != 2) {
-    printf("Usage: %s [HOST:]PORT\n", argv[0]);
+  if (argc != 2 && argc != 3) {
+    printf("Usage: %s [HOST:]PORT [NAME]\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -89,7 +101,12 @@ int main(int argc, char **argv) {
   }
 
   // Take the file from that socket
-  take_file(socket_fd);
+  // If a 3rd arg was provided, save under that name
+  if (argc == 3) {
+    take_file(socket_fd, argv[2]);
+  } else {
+    take_file(socket_fd, NULL);
+  }
 
   // Close the socket before we exit
   close(socket_fd);
