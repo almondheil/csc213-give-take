@@ -1,11 +1,11 @@
 CC     := clang
-CFLAGS := -Wall -g -fsanitize=address
+CFLAGS := -Wall -g #-fsanitize=address
 
 .PHONY: all clean zip format
 
 all: give take
 
-give: give.c message.c utils.c file.c
+give: give.c message.c utils.c file.c logging.c
 	${CC} ${CFLAGS} -lpthread -o $@ $^
 
 take: take.c message.c utils.c file.c

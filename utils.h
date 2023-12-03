@@ -7,6 +7,15 @@
 #pragma once
 
 /**
+ * Shorten a pathname to just the name of a file.
+ * Essentially turns "/path/to/file" into "file".
+ *
+ * \param path  Full path to file
+ * \return      Pointer to the start of the shortname. Does not modify path.
+ */
+char *get_shortname(char *path);
+
+/**
  * Parse connection info in the form server:port or port.
  *
  * \param in        Input string. Assumed to have the form server:port or port,
