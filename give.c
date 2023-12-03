@@ -8,16 +8,23 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "logging.h"
 #include "message.h"
 #include "socket.h"
 #include "utils.h"
 
+
 // Arguments needed to communicate with a client in a thread
 typedef struct {
-  int client_socket_fd;  //< socket fd of connected client
-  file_t *data;          //< pointer to file data
-  char *target_username; //< username of the intended client
-  char *owner_username;  //< username of the user who initialized the get
+  // Needed to serve the file
+  int client_socket_fd;
+  file_t *data;
+  char *target_username;
+  char *owner_username;
+
+  // Needed to log when the file stops being hosted
+  unsigned short host_port;
+  char *host_name;
 } comm_args_t;
 
 /**
@@ -34,7 +41,6 @@ bool user_exists(char *name) {
   return (user != NULL);
 }
 
-
 /**
  * Receive requests from a client and act on them.
  *
@@ -49,6 +55,8 @@ void *receive_client_requests(void *arg) {
   file_t *data = args->data;
   char *target_username = args->target_username;
   char *owner_username = args->owner_username;
+  unsigned short host_port = args->host_port;
+  char *host_name = args->host_name;
 
   while (true) {
     // Recieve a request that the client sends us
@@ -74,6 +82,9 @@ void *receive_client_requests(void *arg) {
 
       // Close the client socket
       close(client_socket_fd);
+
+      // Remove this give from the status file
+      remove_give_status(host_name, host_port);
 
       // Exit, stopping ALL threads
       exit(EXIT_SUCCESS);
@@ -121,11 +132,13 @@ void *receive_client_requests(void *arg) {
  * \param target_username  User to send the file.
  * \param file             File stored in memory.
  * \param socket_fd        Network socket to send through.
+ * \param host_port        Port the file is being hosted on.
+ * \param host_name        Name of the host creating the file.
  * \return                 0 if there are no errors, -1 if there are errors.
  *                         Sets errno on failure.
  */
-int host_file(char *restrict target_username, file_t *file,
-              int socket_fd) {
+int host_file(char *restrict target_username, file_t *file, int socket_fd,
+    unsigned short host_port, char *host_name) {
   // Accept new connections while the server is running
   while (true) {
     int client_socket_fd = server_socket_accept(socket_fd);
@@ -141,6 +154,8 @@ int host_file(char *restrict target_username, file_t *file,
     args->data = file;
     args->target_username = target_username;
     args->owner_username = get_username();
+    args->host_port = host_port;
+    args->host_name = host_name;
 
     // Spin up a thread to communicate with this client
     pthread_t thread;
@@ -161,12 +176,18 @@ int host_file(char *restrict target_username, file_t *file,
  * \param prog_name  The program name to include in usage help
  */
 void print_usage(char *prog_name) {
-  fprintf(stderr, "Usage: %s USER FILE\n", prog_name);
-  fprintf(stderr, "       %s -c [HOST:]PORT\n", prog_name);
+  fprintf(stderr, "Usage: %s USER FILE         (give file)\n", prog_name);
+  fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", prog_name);
+  fprintf(stderr, "       %s --status          (list pending)\n", prog_name);
 }
 
 // Entry point to the program.
 int main(int argc, char **argv) {
+
+  if (argc == 2 && strcmp(argv[1], "--status") == 0) {
+    print_give_status();
+    exit(EXIT_SUCCESS);
+  }
 
   /*
    * Invalid usage
@@ -176,6 +197,9 @@ int main(int argc, char **argv) {
     print_usage(argv[0]);
     exit(EXIT_FAILURE);
   }
+
+  // TODO: Better argument handling, allowing give --status
+  // possibly use getopt and those utils from unistd.h
 
   /*
    * give -c [HOST:]PORT
@@ -266,6 +290,7 @@ int main(int argc, char **argv) {
     if (file == NULL) {
       exit(EXIT_FAILURE);
     }
+    
     // Fork off a child process to do the work
     switch (fork()) {
     case -1:
@@ -290,9 +315,23 @@ int main(int argc, char **argv) {
     // TODO: Mark this give in the owner's ~/.gives file
     // info we need: target user, filename, port number
     // pid may also be useful? who knows
+    char host_name[129]; // TODO: Do better
+    if (gethostname(host_name, 128) == -1) {
+      perror("Failed to get hostname");
+      exit(EXIT_FAILURE);
+    }
+
+    char *first_dot = strchr(host_name, '.');
+    if (first_dot != NULL) {
+      *first_dot = '\0';
+    }
+
+    // Log that we are giving this file
+    add_give_status(get_shortname(argv[2]), argv[1], host_name, port);
 
     // Give the user that file.
-    int rc = host_file(argv[1], file, server_socket_fd);
+    int rc = host_file(argv[1], file, server_socket_fd, port, host_name);
+
     if (rc == -1) {
       // host_file prints its own (more descriptive) error messages
       exit(EXIT_FAILURE);

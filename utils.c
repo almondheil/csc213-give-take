@@ -7,6 +7,19 @@
 
 #include "utils.h"
 
+char *get_shortname(char *path) {
+  // Find the last / character in the path (if it exists)
+  char *last_slash = strrchr(path, '/');
+
+  // If there is a /, trim to only everything after.
+  // this turns /path/to/file.ext into file.ext
+  if (last_slash != NULL) {
+    return last_slash + 1;
+  } else {
+    return path;
+  }
+}
+
 void parse_connection_info(char *in, char *hostname, unsigned short *port) {
   // Determine if there is a : in the input string
 

@@ -10,16 +10,17 @@ In my project proposal, I specified these three areas:
 
 1. Inter-Process Communication / Networks and Distributed Systems
 
-	This category was meant as a catch-all for whatever kind of inter-process communication I ended up
-	using. In retrospect this project leverages network communication rather than
-	any other methods in order to be able to work between multiple computers, but
-	this was not obvious at the time.
+	This category was meant as a catch-all for whatever kind of inter-process
+	communication I ended up using. In retrospect this project leverages network
+	communication rather than any other methods in order to be able to work
+	between multiple computers, but this was not obvious at the time.
 
 2. Files and File Systems
 
-	This one's pretty obvious--the program transferrs files, and in doing so it
-	interacts with them in interesting and less common ways. This includes finding
-	the size of the file and sending file contents over the network.
+	Obviously, a program that transfers files has to deal with the file system. I
+	did some stuff here that I think is interesting, though! This includes sending
+	files in a way that works over the network, and also recursively sending
+	directories.
 
 3. Processes
 
@@ -65,8 +66,9 @@ MathLAN computer (without `.cs.grinnell.edu`):
 ```
 
 In either of these cases, the file `file.txt` will be loaded into `fakeuser`'s
-current directory, as long as it does not already exist. If it does exist, an
-error message will be printed and the transaction can be attempted again.
+current directory, as long as it does not already exist. This utility avoids
+overwriting existing files, requiring the receiving user to change directories
+or fix the conflict before the transfer can go through.
 
 # Detailed usage
 
@@ -75,7 +77,7 @@ error message will be printed and the transaction can be attempted again.
 ### Give a file to a user
 
 ```
-give TARGET_USER FILENAME
+give TARGET_USER PATH
 ```
 
 Parameters are as follows:
@@ -85,10 +87,8 @@ Parameters are as follows:
   - That user is also assumed to exist on the system that `take` will be run on,
 		which is true on MathLAN but not computer systems in general.
 
-- `FILENAME` must be a valid path to a file that is readable by your current user.
-
-  - It does not need to be a text file. This utility sends the raw bytes across,
-		so it can be any type of file.
+- `PATH` must be a valid path to a regular file (as in, not a symlink or block
+		device) or a directory readable by your current user.
 
   - Permissions will not be preserved, the file will be transferred with the
 		default `umask` of the target user.
@@ -96,6 +96,9 @@ Parameters are as follows:
   - It need not be a file in your current directory, and if there is a path to the
 		file that will be truncated when giving. For instance, if you run `give` on
 		`/long/path/to/file.png`, it will be transferred as `file.png`.
+
+  - When sending a directory, the program must recursively read the directory
+			and store it in memory. Because of this, when opening too many files 
 
 Will print the port being used to the terminal.
 
