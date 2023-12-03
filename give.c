@@ -176,8 +176,9 @@ int host_file(char *restrict target_username, file_t *file, int socket_fd,
  * \param prog_name  The program name to include in usage help
  */
 void print_usage(char *prog_name) {
-  fprintf(stderr, "Usage: %s USER FILE\n", prog_name);
-  fprintf(stderr, "       %s -c [HOST:]PORT\n", prog_name);
+  fprintf(stderr, "Usage: %s USER FILE         (give file)\n", prog_name);
+  fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", prog_name);
+  fprintf(stderr, "       %s --status          (list pending)\n", prog_name);
 }
 
 // Entry point to the program.

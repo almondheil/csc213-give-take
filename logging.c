@@ -75,7 +75,7 @@ int remove_give_status(char *host, unsigned int port) {
   strcat(temp_path, ".tmp");
 
   // Open that tempfile too, but in write mode
-  FILE *copy = fopen(path, "w");
+  FILE *copy = fopen(temp_path, "w");
   if (copy == NULL) {
     perror("failed to open temporary status file");
     free(path);
@@ -86,11 +86,19 @@ int remove_give_status(char *host, unsigned int port) {
   size_t sz = 0;
   char *line = NULL;
   ssize_t chars_read;
-  while ((chars_read = getline(&line, &sz, original)) > 0) {
+  while ((chars_read = getline(&line, &sz, original)) != -1) {
     // TODO: safety on this thing. What could be broken?
 
+    char *to_modify = strdup(line);
+    if (to_modify == NULL) {
+      perror("failed to make space for line copy");
+      fclose(original);
+      fclose(copy);
+      return -1;
+    }
+
     // Attempt to pull the host and port out of the line
-    char *string_host = strtok(line, " ");
+    char *string_host = strtok(to_modify, " ");
     char *string_port = strtok(NULL, " ");
 
     // If strtok failed to parse, some formatting is wrong
@@ -100,6 +108,7 @@ int remove_give_status(char *host, unsigned int port) {
       fclose(copy);
       return -1;
     }
+
 
     // Convert the port into an integer value
     unsigned short file_port = atoi(string_port);
@@ -111,6 +120,7 @@ int remove_give_status(char *host, unsigned int port) {
 
     // Copy any other lines from original to copy
     fputs(line, copy);
+    free(to_modify);
   }
 
   // Close both files
@@ -124,7 +134,7 @@ int remove_give_status(char *host, unsigned int port) {
     return -1;
   }
 
-  // Delete the original and replace it with the copy.
+  // Delete the original and replace it with the copy
   if (unlink(path) == -1) {
     perror("failed to delete original file");
     fclose(copy);
@@ -150,11 +160,9 @@ void print_give_status() {
   }
   FILE *stream = fopen(path, "r");
   if (stream == NULL) {
-    // If the file does not exist, print that
+    // Ignore ENOENT, file does not exits
     if (errno != ENOENT) {
       perror("failed to open status file");
-    } else {
-      fprintf(stderr, "Status file does not yet exist!\n");
     }
     free(path);
     return;
@@ -164,12 +172,17 @@ void print_give_status() {
   size_t sz = 0;
   char *line = NULL;
   ssize_t chars_read;
-  while ((chars_read = getline(&line, &sz, stream)) > 0) {
+  while ((chars_read = getline(&line, &sz, stream)) != -1) {
     // strtok for each one of the fields we're interested in
     char *host = strtok(line, " ");
     char *port = strtok(NULL, " ");
     char *file_name = strtok(NULL, " ");
     char *target_user = strtok(NULL, " ");
+
+    // Just skip the line if anything went wrong
+    if (host == NULL || port == NULL || file_name == NULL || target_user == NULL) {
+      continue;
+    }
 
     // Attempt to remove the \n from the end of target_user
     char *newline = strchr(target_user, '\n');
@@ -180,15 +193,10 @@ void print_give_status() {
       continue;
     }
 
-    // Just skip the line if anything went wrong
-    if (host == NULL || port == NULL || file_name == NULL || target_user == NULL) {
-      continue;
-    }
-
     // Pretty print out the data we just got
     printf("File: %s\n", file_name);
-    printf("  to: %s\n", target_user);
-    printf("  started on: %s, port %s\n", host, port);
+    printf("  to user: %s\n", target_user);
+    printf("  running on: %s, port %s\n", host, port);
   }
 
   if (fclose(stream)) {
