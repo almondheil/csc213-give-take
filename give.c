@@ -312,14 +312,13 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
-    // TODO: Mark this give in the owner's ~/.gives file
-    // info we need: target user, filename, port number
-    // pid may also be useful? who knows
+    // Store our hostname in the global variable
     if (gethostname(host_name, MAX_HOSTNAME_LEN) == -1) {
       perror("Failed to get hostname");
       exit(EXIT_FAILURE);
     }
 
+    // Trim the hostname from HOST.cs.grinnell.edu to HOST
     char *first_dot = strchr(host_name, '.');
     if (first_dot != NULL) {
       *first_dot = '\0';
@@ -328,15 +327,13 @@ int main(int argc, char **argv) {
     // Log that we are giving this file
     add_give_status(get_shortname(file_path), argv[1], host_name, port);
 
-    // Give the user that file.
+    // Host the file until somebody quits the server
     int rc = host_file(argv[1], file, server_socket_fd);
-
     if (rc == -1) {
-      // host_file prints its own (more descriptive) error messages
       exit(EXIT_FAILURE);
     }
 
-    // TODO: Remove this give from the owner's ~/.gives file
+    // TODO: Maybe we can "un-log" it here? Can I figure that out?
 
     // Close the socket once the transfer is complete
     close(server_socket_fd);
