@@ -14,26 +14,6 @@
 #define MAX_FILES_OPEN 8
 int files_open = 0;
 
-/**
- * Shorten a pathname to just the name of a file.
- * Essentially turns "/path/to/file" into "file".
- *
- * \param path  Full path to file
- * \return      Pointer to the start of the shortname. Does not modify path.
- */
-char *get_shortname(char *path) {
-  // Find the last / character in the path (if it exists)
-  char *last_slash = strrchr(path, '/');
-
-  // If there is a /, trim to only everything after.
-  // this turns /path/to/file.ext into file.ext
-  if (last_slash != NULL) {
-    return last_slash + 1;
-  } else {
-    return path;
-  }
-}
-
 void free_file(file_t *file) {
   free(file->name);
   switch (file->type) {
