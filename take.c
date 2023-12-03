@@ -73,7 +73,7 @@ void take_file(int socket_fd, char *save_name) {
 int main(int argc, char **argv) {
   // Make sure there are the right number of parameters
   if (argc != 2 && argc != 3) {
-    printf("Usage: %s [HOST:]PORT [NAME]\n", argv[0]);
+    printf("Usage: %s [HOST:]PORT [NAME]    (take file)\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
