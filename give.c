@@ -13,18 +13,17 @@
 #include "socket.h"
 #include "utils.h"
 
+// Global variables to track this give's info
+#define MAX_HOSTNAME_LEN 128
+unsigned short port = 0;
+char host_name[MAX_HOSTNAME_LEN];
 
 // Arguments needed to communicate with a client in a thread
 typedef struct {
-  // Needed to serve the file
   int client_socket_fd;
   file_t *data;
   char *target_username;
   char *owner_username;
-
-  // Needed to log when the file stops being hosted
-  unsigned short host_port;
-  char *host_name;
 } comm_args_t;
 
 /**
@@ -55,8 +54,6 @@ void *receive_client_requests(void *arg) {
   file_t *data = args->data;
   char *target_username = args->target_username;
   char *owner_username = args->owner_username;
-  unsigned short host_port = args->host_port;
-  char *host_name = args->host_name;
 
   while (true) {
     // Recieve a request that the client sends us
@@ -84,7 +81,7 @@ void *receive_client_requests(void *arg) {
       close(client_socket_fd);
 
       // Remove this give from the status file
-      remove_give_status(host_name, host_port);
+      remove_give_status(host_name, port);
 
       // Exit, stopping ALL threads
       exit(EXIT_SUCCESS);
@@ -137,8 +134,7 @@ void *receive_client_requests(void *arg) {
  * \return                 0 if there are no errors, -1 if there are errors.
  *                         Sets errno on failure.
  */
-int host_file(char *restrict target_username, file_t *file, int socket_fd,
-    unsigned short host_port, char *host_name) {
+int host_file(char *restrict target_username, file_t *file, int socket_fd) {
   // Accept new connections while the server is running
   while (true) {
     int client_socket_fd = server_socket_accept(socket_fd);
@@ -154,8 +150,6 @@ int host_file(char *restrict target_username, file_t *file, int socket_fd,
     args->data = file;
     args->target_username = target_username;
     args->owner_username = get_username();
-    args->host_port = host_port;
-    args->host_name = host_name;
 
     // Spin up a thread to communicate with this client
     pthread_t thread;
@@ -271,8 +265,7 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
-    // Open a port for the server
-    unsigned short port = 0;
+    // Open a port for the server, using the global port var
     int server_socket_fd = server_socket_open(&port);
     if (server_socket_fd == -1) {
       perror("Server socket was not opened");
@@ -322,8 +315,7 @@ int main(int argc, char **argv) {
     // TODO: Mark this give in the owner's ~/.gives file
     // info we need: target user, filename, port number
     // pid may also be useful? who knows
-    char host_name[129]; // TODO: Do better
-    if (gethostname(host_name, 128) == -1) {
+    if (gethostname(host_name, MAX_HOSTNAME_LEN) == -1) {
       perror("Failed to get hostname");
       exit(EXIT_FAILURE);
     }
@@ -337,7 +329,7 @@ int main(int argc, char **argv) {
     add_give_status(get_shortname(file_path), argv[1], host_name, port);
 
     // Give the user that file.
-    int rc = host_file(argv[1], file, server_socket_fd, port, host_name);
+    int rc = host_file(argv[1], file, server_socket_fd);
 
     if (rc == -1) {
       // host_file prints its own (more descriptive) error messages
