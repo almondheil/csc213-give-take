@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,54 +25,36 @@ void take_file(int socket_fd) {
   }
 
   // Try to receive the data now
-  file_t *data = recv_file(socket_fd);
-  if (data == NULL) {
-    perror("Failed to receive file");
+  file_t *file = recv_file(socket_fd);
+  if (file == NULL) {
+    if (errno != 0) {
+      perror("Failed to receive file");
+    } else {
+      fprintf(stderr, "You don't have permission to take that file!\n");
+    }
     exit(EXIT_FAILURE);
   }
 
-  // Refuse to overwrite the file if it already exists
-  if (access(data->filename, F_OK) == 0) {
-    fprintf(stderr, "File %s already exists! Cancelling transfer.\n",
-            data->filename);
-    exit(EXIT_FAILURE);
+  // Attempt to write the file to the current directory
+  if (write_file("./", file) == -1) {
+    free_file(file);
+    return;
   }
 
-  // Now that we're sure that the file does not already exist,
-  // tell the host to quit and stop serving the file
-  req.action = DONE;
+  // Once we successfully save the file, tell the server to quit
+  req.action = QUIT_SERVER;
   rc = send_request(socket_fd, &req);
   if (rc == -1) {
     perror("Failed to send quit request");
+    free_file(file);
     exit(EXIT_FAILURE);
   }
 
-  // Open the file locally
-  FILE *stream = fopen(data->filename, "w");
-  if (stream == NULL) {
-    perror("Failed to open output file");
-    exit(EXIT_FAILURE);
-  }
-
-  // Write the transferred data into the new file
-  for (int i = 0; i < data->size; i++) {
-    char ch = (char)data->data[i];
-    fputc(ch, stream);
-  }
-
-  // Save and close the file
-  if (fclose(stream)) {
-    perror("Failed to close output file");
-    exit(EXIT_FAILURE);
-  }
-
-  // Announce that we got the file
-  printf("Successfully took file %s\n", data->filename);
+  // Announce that we got the transfer across
+  printf("Successfully took %s\n", file->name);
 
   // Free malloc'd structures
-  free(data->filename);
-  free(data->data);
-  free(data);
+  free_file(file);
 }
 
 // Entry point to the program.

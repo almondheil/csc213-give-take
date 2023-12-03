@@ -1,5 +1,4 @@
 #include <pwd.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +6,19 @@
 #include <unistd.h>
 
 #include "utils.h"
+
+char *get_shortname(char *path) {
+  // Find the last / character in the path (if it exists)
+  char *last_slash = strrchr(path, '/');
+
+  // If there is a /, trim to only everything after.
+  // this turns /path/to/file.ext into file.ext
+  if (last_slash != NULL) {
+    return last_slash + 1;
+  } else {
+    return path;
+  }
+}
 
 void parse_connection_info(char *in, char *hostname, unsigned short *port) {
   // Determine if there is a : in the input string
@@ -38,27 +50,6 @@ void parse_connection_info(char *in, char *hostname, unsigned short *port) {
     strcat(hostname, ".cs.grinnell.edu");
     *port = atoi(parts[1]);
   }
-}
-
-char *get_shortname(char *path) {
-  // Find the last / character in the path (if it exists)
-  char *last_slash = strrchr(path, '/');
-
-  // If there is a /, trim to only everything after.
-  // this turns /path/to/file.ext into file.ext
-  if (last_slash != NULL) {
-    return last_slash + 1;
-  } else {
-    return path;
-  }
-}
-
-bool user_exists(char *name) {
-  // Get the user by name
-  struct passwd *user = getpwnam(name);
-
-  // getpwnam returns NULL if the user does not exist
-  return (user != NULL);
 }
 
 char *get_username() {

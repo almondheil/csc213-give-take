@@ -1,17 +1,10 @@
-#pragma once
-
-#include <stdbool.h>
-
 /**
- * Parse connection info in the form server:port or port.
+ * utils.h
  *
- * \param in        Input string. Assumed to have the form server:port or port,
- *                  where port is an unsigned short integer value.
- * \param hostname  Output pointer to hostname. Must have enough space to hold
- *                  hostname, either "localhost" or whatever the user inputs
- * \param port      Output pointer to connection port.
+ * Common utilities used by both give and take
  */
-void parse_connection_info(char *in, char *hostname, unsigned short *port);
+
+#pragma once
 
 /**
  * Shorten a pathname to just the name of a file.
@@ -23,12 +16,15 @@ void parse_connection_info(char *in, char *hostname, unsigned short *port);
 char *get_shortname(char *path);
 
 /**
- * Determine whether a user exists on this system.
+ * Parse connection info in the form server:port or port.
  *
- * \param name  Username to test
- * \return      true if the user exists, false otherwise
+ * \param in        Input string. Assumed to have the form server:port or port,
+ *                  where port is an unsigned short integer value.
+ * \param hostname  Output pointer to hostname. Must have enough space to hold
+ *                  hostname, either "localhost" or whatever the user inputs
+ * \param port      Output pointer to connection port.
  */
-bool user_exists(char *name);
+void parse_connection_info(char *in, char *hostname, unsigned short *port);
 
 /**
  * Determine the username from the euid of the running process.

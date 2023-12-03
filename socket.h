@@ -1,3 +1,10 @@
+/**
+ * socket.h
+ *
+ * Manage web sockets through a slightly easier interface.
+ * Unmodified from socket.h as used in networking exercises in class.
+ */
+
 #if !defined(SOCKET_H)
 #define SOCKET_H
 
@@ -17,7 +24,7 @@
  * \returns   A file descriptor for the connected socket, or -1 if there is an
  *            error. The errno value will be set by the failed POSIX call.
  */
-int socket_connect(char *server_name, unsigned short port) {
+static int socket_connect(char *server_name, unsigned short port) {
   // Look up the server by name
   struct hostent *server = gethostbyname(server_name);
   if (server == NULL) {
@@ -41,7 +48,7 @@ int socket_connect(char *server_name, unsigned short port) {
   // Copy the server address info returned by gethostbyname into the address
   memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
-  // Connect to the server
+  // Connect to the web server
   if (connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in))) {
     close(fd);
     return -1;
@@ -63,7 +70,7 @@ int socket_connect(char *server_name, unsigned short port) {
  *                In case of failure, this function returns -1. The value of
  *                errno will be set by the POSIX socket function that failed.
  */
-int server_socket_open(unsigned short *port) {
+static int server_socket_open(unsigned short *port) {
   // Create a server socket. Return if there is an error.
   int fd = socket(AF_INET, SOCK_STREAM, 0);
   if (fd == -1) {
@@ -106,7 +113,7 @@ int server_socket_open(unsigned short *port) {
  * \returns   The file descriptor for the newly-connected client socket. In case
  *            of failure, returns -1 with errno set by the failed accept call.
  */
-int server_socket_accept(int server_socket_fd) {
+static int server_socket_accept(int server_socket_fd) {
   // Create a struct to record the connected client's address
   struct sockaddr_in client_addr;
   socklen_t client_addr_len = sizeof(struct sockaddr_in);

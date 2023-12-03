@@ -1,17 +1,18 @@
+/**
+ * message.h
+ *
+ * Send messages and requests as messages over the network.
+ * Adapted from message.h used in in-class networking exercises.
+ */
+
 #include <stdint.h>
 
-// File name and contents
-typedef struct {
-  char *filename;
-  size_t size;
-  uint8_t *data;
-} file_t;
+#include "file.h"
 
 // Possible actions for a request
 typedef enum {
   SEND_DATA,
-  DONE,
-  CANCEL
+  QUIT_SERVER,
 } action_t;
 
 // Action request, including requester username
