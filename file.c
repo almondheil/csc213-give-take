@@ -42,6 +42,12 @@ void free_file(file_t *file) {
  * \return      0 if everything went well, -1 on error
  */
 int read_regular(char *path, file_t *file) {
+  // check that we don't have too many files open
+  if (files_open > MAX_FILES_OPEN) {
+    fprintf(stderr, "Exceeded max %d files open at once!\n", MAX_FILES_OPEN);
+    return -1;
+  }
+
   // try to open the file
   FILE *stream = fopen(path, "r");
   if (stream == NULL) {
@@ -86,6 +92,12 @@ int read_regular(char *path, file_t *file) {
  * \return       0 if everything went well, -1 on error
  */
 int read_directory(char *path, file_t *file) {
+  // check that we don't have too many files open
+  if (files_open > MAX_FILES_OPEN) {
+    fprintf(stderr, "Exceeded max %d files open at once due to directory recursion!\n", MAX_FILES_OPEN);
+    return -1;
+  }
+
   DIR *dir = opendir(path);
   if (dir == NULL) {
     perror("failed to open directory");
@@ -142,14 +154,6 @@ int read_directory(char *path, file_t *file) {
 }
 
 file_t *read_file(char *path) {
-  // check that we don't have too many files open
-  if (files_open > MAX_FILES_OPEN) {
-    fprintf(stderr,
-        "Exceeded max %d files open at once due to directory recursion!\n",
-        MAX_FILES_OPEN);
-    return NULL;
-  }
-
   // stat the file, also checking that it exists
   struct stat st;
   if (stat(path, &st) == -1) {
