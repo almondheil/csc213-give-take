@@ -333,10 +333,8 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
-    // TODO: Maybe we can "un-log" it here? Can I figure that out?
-
-    // Close the socket once the transfer is complete
-    close(server_socket_fd);
+    // We never actually exit from host_file, but everything gets cleaned up
+    // by whichever thread receives the quit server request.
   }
 
   return 0;
