@@ -72,7 +72,7 @@ void *receive_client_requests(void *arg) {
       free(req->username);
       free(req);
 
-      // Close the client socket--something went wrong
+      // Close the client socket
       close(client_socket_fd);
 
       // Exit, stopping ALL threads
@@ -119,16 +119,13 @@ void *receive_client_requests(void *arg) {
  * Give a file to a target user through a network socket.
  *
  * \param target_username  User to send the file.
- * \param file_path        Full path to the file.
+ * \param file             File stored in memory.
  * \param socket_fd        Network socket to send through.
  * \return                 0 if there are no errors, -1 if there are errors.
  *                         Sets errno on failure.
  */
-int host_file(char *restrict target_username, char *restrict file_path,
+int host_file(char *restrict target_username, file_t *file,
               int socket_fd) {
-  // Read that file into memory
-  file_t *file = read_file(file_path);
-
   // Accept new connections while the server is running
   while (true) {
     int client_socket_fd = server_socket_accept(socket_fd);
@@ -264,6 +261,11 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
+    // Attempt to read the file into memory now, so we can hit an error if there is one
+    file_t *file = read_file(argv[2]);
+    if (file == NULL) {
+      exit(EXIT_FAILURE);
+    }
     // Fork off a child process to do the work
     switch (fork()) {
     case -1:
@@ -290,7 +292,7 @@ int main(int argc, char **argv) {
     // pid may also be useful? who knows
 
     // Give the user that file.
-    int rc = host_file(argv[1], argv[2], server_socket_fd);
+    int rc = host_file(argv[1], file, server_socket_fd);
     if (rc == -1) {
       // host_file prints its own (more descriptive) error messages
       exit(EXIT_FAILURE);

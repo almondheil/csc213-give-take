@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +9,10 @@
 
 #include "file.h"
 #include "utils.h"
+
+// Manually keep track of how many files we have open
+#define MAX_FILES_OPEN 8
+int files_open = 0;
 
 /**
  * Shorten a pathname to just the name of a file.
@@ -95,9 +100,10 @@ int read_regular(char *path, file_t *file) {
 /**
  * Read a directory into a pointer, and all the files inside recursively.
  *
- * \param path  Path to the directory
- * \param file  Struct to read the file into
- * \return      0 if everything went well, -1 on error
+ * \param path   Path to the directory
+ * \param file   Struct to read the file into
+ * \param nopen  Number of files currently open
+ * \return       0 if everything went well, -1 on error
  */
 int read_directory(char *path, file_t *file) {
   DIR *dir = opendir(path);
@@ -133,7 +139,11 @@ int read_directory(char *path, file_t *file) {
         (file->size + 1) * sizeof(file_t));
 
     // Set that entry by recursively calling read_file on it
-    file->contents.entries[file->size] = read_file(next_path);
+    file_t *entry_file = read_file(next_path);
+    if (entry_file == NULL) {
+      return -1;
+    }
+    file->contents.entries[file->size] = entry_file;
 
     // Free the malloc'd path
     free(next_path);
@@ -153,6 +163,12 @@ int read_directory(char *path, file_t *file) {
 }
 
 file_t *read_file(char *path) {
+  // check that we don't have too many files open
+  if (files_open > MAX_FILES_OPEN) {
+    fprintf(stderr, "Exceeded max of %d files open at once due to directory recursion!\n", MAX_FILES_OPEN);
+    return NULL;
+  }
+
   // stat the file, also checking that it exists
   struct stat st;
   if (stat(path, &st) == -1) {
@@ -182,10 +198,12 @@ file_t *read_file(char *path) {
     new->contents.data = NULL;
 
     // Attempt to read the file contents and return them.
+    files_open++;
     if (read_regular(path, new) == -1) {
       free_file(new);
       return NULL;
     }
+    files_open--;
     return new;
   } else if (S_ISDIR(st.st_mode)) {
     new->type = F_DIR;
@@ -208,10 +226,12 @@ file_t *read_file(char *path) {
     }
 
     // Attempt to recursively read the directory contents and return them
+    files_open++;
     if (read_directory(actual_path, new) == -1) {
       free_file(new);
       return NULL;
     }
+    files_open--;
 
     // Free duplicated string
     free(actual_path);
