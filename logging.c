@@ -1,7 +1,7 @@
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <unistd.h>
 
 #include "logging.h"
@@ -13,7 +13,8 @@
  */
 char *status_file_path() {
   char *home_path = getenv("HOME");
-  char *status_file_path = malloc(sizeof(char) * (strlen(home_path) + strlen("/") + strlen(STATUS_FILE_NAME) + 1));
+  char *status_file_path = malloc(sizeof(char) *
+      (strlen(home_path) + strlen("/") + strlen(STATUS_FILE_NAME) + 1));
   if (status_file_path == NULL) {
     return NULL;
   }
@@ -25,7 +26,8 @@ char *status_file_path() {
   return status_file_path;
 }
 
-int add_give_status(char *file_name, char *target_user, char *host, unsigned int port) {
+int add_give_status(char *file_name, char *target_user, char *host,
+                    unsigned int port) {
   char *path = status_file_path();
   if (path == NULL) {
     perror("failed to allocate space for status file name");
@@ -71,7 +73,8 @@ int remove_give_status(char *host, unsigned int port) {
 
   // Construct a path to a tempfile we can use
   char *temp_path = strdup(path);
-  temp_path = realloc(temp_path, sizeof(char) * (strlen(temp_path) + strlen(".tmp") + 1));
+  temp_path = realloc(temp_path, sizeof(char) *
+      (strlen(temp_path) + strlen(".tmp") + 1));
   strcat(temp_path, ".tmp");
 
   // Open that tempfile too, but in write mode
@@ -108,7 +111,6 @@ int remove_give_status(char *host, unsigned int port) {
       fclose(copy);
       return -1;
     }
-
 
     // Convert the port into an integer value
     unsigned short file_port = atoi(string_port);
@@ -180,7 +182,8 @@ void print_give_status() {
     char *target_user = strtok(NULL, " ");
 
     // Just skip the line if anything went wrong
-    if (host == NULL || port == NULL || file_name == NULL || target_user == NULL) {
+    if (host == NULL || port == NULL || file_name == NULL ||
+        target_user == NULL) {
       continue;
     }
 

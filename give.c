@@ -281,11 +281,12 @@ int main(int argc, char **argv) {
     // Trim the trailing / off the provided file if it exists
     char *file_path = argv[2];
     int len = strlen(file_path);
-    if (file_path[len-1] == '/') {
-      file_path[len-1] = '\0';
+    if (file_path[len - 1] == '/') {
+      file_path[len - 1] = '\0';
     }
 
-    // Attempt to read the file into memory now, so we can hit an error if there is one
+    // Attempt to read the file into memory now.
+    // If there's an error, we want to know before daemonizing
     file_t *file = read_file(argv[2]);
     if (file == NULL) {
       exit(EXIT_FAILURE);

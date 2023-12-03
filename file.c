@@ -17,19 +17,19 @@ int files_open = 0;
 void free_file(file_t *file) {
   free(file->name);
   switch (file->type) {
-    case F_REG:
-      // Regular files just need to have their data freed
-      free(file->contents.data);
-      break;
-    case F_DIR:
-      // For directories, we need to recursively free all the entries
-      for (size_t i = 0; i < file->size; i++) {
-        free_file(file->contents.entries[i]);
-      }
+  case F_REG:
+    // Regular files just need to have their data freed
+    free(file->contents.data);
+    break;
+  case F_DIR:
+    // For directories, we need to recursively free all the entries
+    for (size_t i = 0; i < file->size; i++) {
+      free_file(file->contents.entries[i]);
+    }
 
-      // Then, we can free where the entries are stored
-      free(file->contents.entries);
-      break;
+    // Then, we can free where the entries are stored
+    free(file->contents.entries);
+    break;
   }
   free(file);
 }
@@ -115,8 +115,7 @@ int read_directory(char *path, file_t *file) {
     strcat(next_path, entry->d_name);
 
     // Realloc the entries one larger to make space for the new file
-    file->contents.entries = realloc(file->contents.entries,
-        (file->size + 1) * sizeof(file_t));
+    file->contents.entries = realloc(file->contents.entries, (file->size + 1) * sizeof(file_t));
 
     // Set that entry by recursively calling read_file on it
     file_t *entry_file = read_file(next_path);
@@ -145,7 +144,9 @@ int read_directory(char *path, file_t *file) {
 file_t *read_file(char *path) {
   // check that we don't have too many files open
   if (files_open > MAX_FILES_OPEN) {
-    fprintf(stderr, "Exceeded max of %d files open at once due to directory recursion!\n", MAX_FILES_OPEN);
+    fprintf(stderr,
+        "Exceeded max %d files open at once due to directory recursion!\n",
+        MAX_FILES_OPEN);
     return NULL;
   }
 
@@ -200,7 +201,7 @@ file_t *read_file(char *path) {
     // directory paths can end in /, or not.
     // to make recursion easier, always add it if it does not exist.
     int len = strlen(path) + 1;
-    if (path[len-2] != '/') {
+    if (path[len - 2] != '/') {
       actual_path = realloc(actual_path, len + 1);
       strcat(actual_path, "/");
     }
@@ -327,16 +328,16 @@ int write_directory(char *path, file_t *file) {
 
 int write_file(char *path, file_t *file) {
   switch (file->type) {
-    case F_REG:
-      if (write_regular(path, file) == -1) {
-        return -1;
-      }
-      break;
-    case F_DIR:
-      if (write_directory(path, file) == -1) {
-        return -1;
-      }
-      break;
+  case F_REG:
+    if (write_regular(path, file) == -1) {
+      return -1;
+    }
+    break;
+  case F_DIR:
+    if (write_directory(path, file) == -1) {
+      return -1;
+    }
+    break;
   }
 
   return 0;

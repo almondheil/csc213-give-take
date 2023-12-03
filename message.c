@@ -32,7 +32,7 @@ int send_file(int sock_fd, file_t *file) {
   while (bytes_written < name_len) {
     // Write the remaining message
     ssize_t rc = write(sock_fd, file->name + bytes_written,
-                       name_len - bytes_written);
+        name_len - bytes_written);
 
     // if the write failed, there was an error
     if (rc <= 0) {
@@ -50,7 +50,7 @@ int send_file(int sock_fd, file_t *file) {
     while (bytes_written < file->size) {
       // write the remaining message
       ssize_t rc = write(sock_fd, file->contents.data + bytes_written,
-          file->size - bytes_written);
+                         file->size - bytes_written);
 
       // if the write failed, there was an error
       if (rc <= 0)
@@ -105,7 +105,8 @@ file_t *recv_file(int sock_fd) {
   // Read the filename of the file
   size_t bytes_read = 0;
   while (bytes_read < filename_len) {
-    ssize_t rc = read(sock_fd, file->name + bytes_read, filename_len - bytes_read);
+    ssize_t rc = read(sock_fd, file->name + bytes_read,
+        filename_len - bytes_read);
 
     if (rc <= 0) {
       free_file(file);
@@ -132,7 +133,7 @@ file_t *recv_file(int sock_fd) {
     bytes_read = 0;
     while (bytes_read < data_size) {
       ssize_t rc = read(sock_fd, file->contents.data + bytes_read,
-          data_size - bytes_read);
+                        data_size - bytes_read);
 
       if (rc <= 0) {
         free_file(file);
@@ -170,8 +171,8 @@ int send_request(int sock_fd, request_t *req) {
   size_t bytes_written = 0;
   while (bytes_written < name_len) {
     // write the remaining message
-    ssize_t rc =
-        write(sock_fd, req->username + bytes_written, name_len - bytes_written);
+    ssize_t rc = write(sock_fd, req->username + bytes_written,
+        name_len - bytes_written);
 
     // if the write failed, there was an error
     if (rc <= 0)
@@ -202,8 +203,8 @@ request_t *recv_request(int sock_fd) {
   // Read the name
   size_t bytes_read = 0;
   while (bytes_read < name_len) {
-    ssize_t rc =
-        read(sock_fd, req->username + bytes_read, name_len - bytes_read);
+    ssize_t rc = read(sock_fd, req->username + bytes_read,
+        name_len - bytes_read);
 
     if (rc <= 0) {
       free(req->username);

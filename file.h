@@ -36,7 +36,8 @@ typedef struct file {
 void free_file(file_t *file);
 
 /**
- * Read a file of unknown type, returning malloc'd memory containing the file info.
+ * Read a file of unknown type, returning malloc'd memory containing the file
+ * info. For directories, this includes any directory entries.
  *
  * \param path  Path to the file.
  * \return      Pointer to malloc'd file.
