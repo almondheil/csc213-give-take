@@ -285,12 +285,19 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
 
+    // Trim the trailing / off the provided file if it exists
+    char *file_path = argv[2];
+    int len = strlen(file_path);
+    if (file_path[len-1] == '/') {
+      file_path[len-1] = '\0';
+    }
+
     // Attempt to read the file into memory now, so we can hit an error if there is one
     file_t *file = read_file(argv[2]);
     if (file == NULL) {
       exit(EXIT_FAILURE);
     }
-    
+
     // Fork off a child process to do the work
     switch (fork()) {
     case -1:
@@ -327,7 +334,7 @@ int main(int argc, char **argv) {
     }
 
     // Log that we are giving this file
-    add_give_status(get_shortname(argv[2]), argv[1], host_name, port);
+    add_give_status(get_shortname(file_path), argv[1], host_name, port);
 
     // Give the user that file.
     int rc = host_file(argv[1], file, server_socket_fd, port, host_name);
