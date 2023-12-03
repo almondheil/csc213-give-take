@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +27,11 @@ void take_file(int socket_fd) {
   // Try to receive the data now
   file_t *file = recv_file(socket_fd);
   if (file == NULL) {
-    perror("Failed to receive file");
+    if (errno != 0) {
+      perror("Failed to receive file");
+    } else {
+      fprintf(stderr, "You don't have permission to take that file!\n");
+    }
     exit(EXIT_FAILURE);
   }
 
