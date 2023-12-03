@@ -80,7 +80,7 @@ void *receive_client_requests(void *arg) {
       free(req->username);
       free(req);
 
-      // Close the client socket--something went wrong
+      // Close the client socket
       close(client_socket_fd);
 
       // Remove this give from the status file
@@ -130,7 +130,7 @@ void *receive_client_requests(void *arg) {
  * Give a file to a target user through a network socket.
  *
  * \param target_username  User to send the file.
- * \param file_path        Full path to the file.
+ * \param file             File stored in memory.
  * \param socket_fd        Network socket to send through.
  * \param host_port        Port the file is being hosted on.
  * \param host_name        Name of the host creating the file.
@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
     if (file == NULL) {
       exit(EXIT_FAILURE);
     }
-
+    
     // Fork off a child process to do the work
     switch (fork()) {
     case -1:
@@ -331,6 +331,7 @@ int main(int argc, char **argv) {
 
     // Give the user that file.
     int rc = host_file(argv[1], file, server_socket_fd, port, host_name);
+
     if (rc == -1) {
       // host_file prints its own (more descriptive) error messages
       exit(EXIT_FAILURE);
