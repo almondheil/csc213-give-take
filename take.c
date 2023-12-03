@@ -36,7 +36,6 @@ void take_file(int socket_fd) {
   }
 
   // Attempt to write the file to the current directory
-  // TODO: more glamorous way to call write_file? pwd?
   if (write_file("./", file) == -1) {
     free_file(file);
     return;

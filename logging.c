@@ -90,8 +90,6 @@ int remove_give_status(char *host, unsigned int port) {
   char *line = NULL;
   ssize_t chars_read;
   while ((chars_read = getline(&line, &sz, original)) != -1) {
-    // TODO: safety on this thing. What could be broken?
-
     char *to_modify = strdup(line);
     if (to_modify == NULL) {
       perror("failed to make space for line copy");

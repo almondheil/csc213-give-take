@@ -177,7 +177,9 @@ void print_usage(char *prog_name) {
 
 // Entry point to the program.
 int main(int argc, char **argv) {
-
+  /*
+   * give --status
+   */
   if (argc == 2 && strcmp(argv[1], "--status") == 0) {
     print_give_status();
     exit(EXIT_SUCCESS);
@@ -191,9 +193,6 @@ int main(int argc, char **argv) {
     print_usage(argv[0]);
     exit(EXIT_FAILURE);
   }
-
-  // TODO: Better argument handling, allowing give --status
-  // possibly use getopt and those utils from unistd.h
 
   /*
    * give -c [HOST:]PORT
