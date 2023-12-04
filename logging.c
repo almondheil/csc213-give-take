@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "logging.h"
@@ -45,8 +46,25 @@ int add_give_status(char *file_name, char *target_user, char *host,
   // We're done with path now no matter what
   free(path);
 
+  // Also find the current working directory, for context
+  char cwd[MAX_PATH_LEN];
+  if (getcwd(cwd, MAX_PATH_LEN) == NULL) {
+    perror("Failed to get current directory");
+    free(path);
+    return -1;
+  }
+
+  // Determine the current time as well.
+  int time_format_chars = strlen("YYYY-MM-DD HH:MM:SS") + 1;
+  time_t now = time(NULL);
+  struct tm *local_time = localtime(&now);
+
+  // Format the time as YYYY-MM-DD HH:MM:SS
+  char time_formatted[time_format_chars];
+  strftime(time_formatted, time_format_chars, "%F %T", local_time);
+
   // Write the data to the file, space separated for ease of use
-  fprintf(stream, "%s %d %s %s\n", host, port, file_name, target_user);
+  fprintf(stream, "%s,%d,%s,%s,%s,%s\n", host, port, file_name, target_user, time_formatted, cwd);
 
   // Save and close the file
   if (fclose(stream)) {
@@ -99,8 +117,8 @@ int remove_give_status(char *host, unsigned int port) {
     }
 
     // Attempt to pull the host and port out of the line
-    char *string_host = strtok(to_modify, " ");
-    char *string_port = strtok(NULL, " ");
+    char *string_host = strtok(to_modify, ",");
+    char *string_port = strtok(NULL, ",");
 
     // If strtok failed to parse, some formatting is wrong
     if (string_host == NULL || string_port == NULL) {
@@ -171,19 +189,21 @@ void print_give_status() {
   ssize_t chars_read;
   while ((chars_read = getline(&line, &sz, stream)) != -1) {
     // strtok for each one of the fields we're interested in
-    char *host = strtok(line, " ");
-    char *port = strtok(NULL, " ");
-    char *file_name = strtok(NULL, " ");
-    char *target_user = strtok(NULL, " ");
+    char *host = strtok(line, ",");
+    char *port = strtok(NULL, ",");
+    char *file_name = strtok(NULL, ",");
+    char *target_user = strtok(NULL, ",");
+    char *time = strtok(NULL, ",");
+    char *cwd = strtok(NULL, ",");
 
     // Just skip the line if anything went wrong
     if (host == NULL || port == NULL || file_name == NULL ||
-        target_user == NULL) {
+        target_user == NULL || cwd == NULL) {
       continue;
     }
 
-    // Attempt to remove the \n from the end of target_user
-    char *newline = strchr(target_user, '\n');
+    // Attempt to remove the \n from the end of cwd
+    char *newline = strchr(cwd, '\n');
     if (newline != NULL) {
       *newline = '\0';
     } else {
@@ -195,6 +215,8 @@ void print_give_status() {
     printf("%s\n", file_name);
     printf("  To: %s\n", target_user);
     printf("  Server: %s:%s\n", host, port);
+    printf("  Directory: %s\n", cwd);
+    printf("  Time: %s\n", time);
   }
 
   if (fclose(stream)) {
