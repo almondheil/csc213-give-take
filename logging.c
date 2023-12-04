@@ -192,9 +192,9 @@ void print_give_status() {
     }
 
     // Pretty print out the data we just got
-    printf("File: %s\n", file_name);
-    printf("  to user: %s\n", target_user);
-    printf("  running on: %s, port %s\n", host, port);
+    printf("%s\n", file_name);
+    printf("  To: %s\n", target_user);
+    printf("  Server: %s:%s\n", host, port);
   }
 
   if (fclose(stream)) {
