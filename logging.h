@@ -7,6 +7,7 @@
 #pragma once
 
 #define STATUS_FILE_NAME ".gives"
+#define MAX_PATH_LEN 4096
 
 /**
  * Add a give to the status file.
