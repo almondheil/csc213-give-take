@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#include "file.h"
+#include "filereader.h"
 
 // Possible actions for a request
 typedef enum {
