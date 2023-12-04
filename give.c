@@ -205,6 +205,11 @@ int main(int argc, char **argv) {
     unsigned short port = 0;
     parse_connection_info(argv[2], hostname, &port);
 
+    if (port == 0) {
+      fprintf(stderr, "Could not parse port from argument %s!\n", argv[2]);
+      exit(EXIT_FAILURE);
+    }
+
     // Connect to the port
     int socket_fd = socket_connect(hostname, port);
     if (socket_fd == -1) {
