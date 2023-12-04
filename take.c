@@ -69,7 +69,6 @@ void take_file(int socket_fd, char *save_name) {
   free_file(file);
 }
 
-// Entry point to the program.
 int main(int argc, char **argv) {
   // Make sure there are the right number of parameters
   if (argc != 2 && argc != 3) {

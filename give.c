@@ -129,8 +129,6 @@ void *receive_client_requests(void *arg) {
  * \param target_username  User to send the file.
  * \param file             File stored in memory.
  * \param socket_fd        Network socket to send through.
- * \param host_port        Port the file is being hosted on.
- * \param host_name        Name of the host creating the file.
  * \return                 0 if there are no errors, -1 if there are errors.
  *                         Sets errno on failure.
  */
@@ -164,18 +162,12 @@ int host_file(char *restrict target_username, file_t *file, int socket_fd) {
   return 0;
 }
 
-/**
- * Print the usage of this program
- *
- * \param prog_name  The program name to include in usage help
- */
 void print_usage(char *prog_name) {
   fprintf(stderr, "Usage: %s USER FILE         (give file)\n", prog_name);
   fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", prog_name);
   fprintf(stderr, "       %s --status          (list pending)\n", prog_name);
 }
 
-// Entry point to the program.
 int main(int argc, char **argv) {
   /*
    * give --status
@@ -186,7 +178,7 @@ int main(int argc, char **argv) {
   }
 
   /*
-   * Invalid usage
+   * Invalid usage (all other commands take 3 parameters)
    */
   if (argc != 3) {
     // They definitely gave the wrong number of arguments
@@ -256,7 +248,7 @@ int main(int argc, char **argv) {
     // Check argv[2] is a supported type of file, not something else
     struct stat st;
     if (stat(argv[2], &st) == -1) {
-      perror("Could not stat file");
+      perror("Failed to stat file");
       exit(EXIT_FAILURE);
     }
     if (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode)) {
@@ -267,13 +259,13 @@ int main(int argc, char **argv) {
     // Open a port for the server, using the global port var
     int server_socket_fd = server_socket_open(&port);
     if (server_socket_fd == -1) {
-      perror("Server socket was not opened");
+      perror("Failed to open server socket");
       exit(EXIT_FAILURE);
     }
 
     // Start listening for connections, with a maximum of one queued connection
     if (listen(server_socket_fd, 1)) {
-      perror("listen failed");
+      perror("Failed to listen");
       exit(EXIT_FAILURE);
     }
 

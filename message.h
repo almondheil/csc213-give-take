@@ -5,6 +5,8 @@
  * Adapted from message.h used in in-class networking exercises.
  */
 
+#pragma once
+
 #include <stdint.h>
 
 #include "filereader.h"
