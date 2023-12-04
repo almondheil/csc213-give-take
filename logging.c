@@ -134,13 +134,7 @@ int remove_give_status(char *host, unsigned int port) {
     return -1;
   }
 
-  // Delete the original and replace it with the copy
-  if (unlink(path) == -1) {
-    perror("failed to delete original file");
-    free(temp_path);
-    free(path);
-    return -1;
-  }
+  // Replace the original with the copy
   if (rename(temp_path, path) == -1) {
     perror("failed to rename old file to new file");
     free(temp_path);
