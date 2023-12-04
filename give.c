@@ -162,6 +162,12 @@ int host_file(char *restrict target_username, file_t *file, int socket_fd) {
   return 0;
 }
 
+void print_usage(char *prog_name) {
+  fprintf(stderr, "Usage: %s USER FILE         (give file)\n", prog_name);
+  fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", prog_name);
+  fprintf(stderr, "       %s --status          (list pending)\n", prog_name);
+}
+
 int main(int argc, char **argv) {
   /*
    * give --status
@@ -172,13 +178,11 @@ int main(int argc, char **argv) {
   }
 
   /*
-   * Invalid usage
+   * Invalid usage (all other commands take 3 parameters)
    */
   if (argc != 3) {
     // They definitely gave the wrong number of arguments
-    fprintf(stderr, "Usage: %s USER FILE         (give file)\n", argv[0]);
-    fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", argv[0]);
-    fprintf(stderr, "       %s --status          (list pending)\n", argv[0]);
+    print_usage(argv[0]);
     exit(EXIT_FAILURE);
   }
 
