@@ -30,14 +30,14 @@ int add_give_status(char *file_name, char *target_user, char *host,
                     unsigned int port) {
   char *path = status_file_path();
   if (path == NULL) {
-    perror("failed to allocate space for status file name");
+    perror("Failed to allocate space for status file name");
     return -1;
   }
 
   // Open the status file
   FILE *stream = fopen(path, "a");
   if (stream == NULL) {
-    perror("failed to open status file");
+    perror("Failed to open status file");
     free(path);
     return -1;
   }
@@ -50,7 +50,7 @@ int add_give_status(char *file_name, char *target_user, char *host,
 
   // Save and close the file
   if (fclose(stream)) {
-    perror("failed to close status file");
+    perror("Failed to close status file");
     return -1;
   }
 
@@ -61,12 +61,12 @@ int remove_give_status(char *host, unsigned int port) {
   // Locate and open the original file
   char *path = status_file_path();
   if (path == NULL) {
-    perror("failed to allocate space for status file name");
+    perror("Failed to allocate space for status file name");
     return -1;
   }
   FILE *original = fopen(path, "r");
   if (original == NULL) {
-    perror("failed to open status file");
+    perror("Failed to open status file");
     free(path);
     return -1;
   }
@@ -80,7 +80,7 @@ int remove_give_status(char *host, unsigned int port) {
   // Open that tempfile too, but in write mode
   FILE *copy = fopen(temp_path, "w");
   if (copy == NULL) {
-    perror("failed to open temporary status file");
+    perror("Failed to open temporary status file");
     free(path);
     return -1;
   }
@@ -92,7 +92,7 @@ int remove_give_status(char *host, unsigned int port) {
   while ((chars_read = getline(&line, &sz, original)) != -1) {
     char *to_modify = strdup(line);
     if (to_modify == NULL) {
-      perror("failed to make space for line copy");
+      perror("Failed to make space for line copy");
       fclose(original);
       fclose(copy);
       return -1;
@@ -104,7 +104,7 @@ int remove_give_status(char *host, unsigned int port) {
 
     // If strtok failed to parse, some formatting is wrong
     if (string_host == NULL || string_port == NULL) {
-      fprintf(stderr, "malformed status file\n");
+      fprintf(stderr, "Malformed status file\n");
       fclose(original);
       fclose(copy);
       return -1;
@@ -125,18 +125,18 @@ int remove_give_status(char *host, unsigned int port) {
 
   // Save and close both files
   if (fclose(original)) {
-    perror("failed to close original status file");
+    perror("Failed to close original status file");
     fclose(copy); //< attempt to close copy, even though it could fail
     return -1;
   }
   if (fclose(copy)) {
-    perror("failed to close copied status file");
+    perror("Failed to close copied status file");
     return -1;
   }
 
   // Replace the original with the copy
   if (rename(temp_path, path) == -1) {
-    perror("failed to rename old file to new file");
+    perror("Failed to rename old file to new file");
     free(temp_path);
     free(path);
     return -1;
@@ -152,14 +152,14 @@ void print_give_status() {
   // Locate and open the status file
   char *path = status_file_path();
   if (path == NULL) {
-    perror("failed to allocate space for status file name");
+    perror("Failed to allocate space for status file name");
     return;
   }
   FILE *stream = fopen(path, "r");
   if (stream == NULL) {
     // Ignore ENOENT, file does not exits
     if (errno != ENOENT) {
-      perror("failed to open status file");
+      perror("Failed to open status file");
     }
     free(path);
     return;
@@ -198,7 +198,7 @@ void print_give_status() {
   }
 
   if (fclose(stream)) {
-    perror("failed to close status file");
+    perror("Failed to close status file");
     free(path);
     return;
   }

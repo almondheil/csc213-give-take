@@ -94,7 +94,6 @@ file_t *recv_file(int sock_fd) {
   // Make space to store the filename
   file->name = malloc(filename_len + 1);
   if (file->name == NULL) {
-    perror("could not allocate space to receive filename");
     free_file(file);
     return NULL;
   }
@@ -121,7 +120,6 @@ file_t *recv_file(int sock_fd) {
     // Make space to store the file contents
     file->contents.data = malloc(data_size);
     if (file->contents.data == NULL) {
-      perror("failed to allocate space to receive file data");
       free_file(file);
       return NULL;
     }

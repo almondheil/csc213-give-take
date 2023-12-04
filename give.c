@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
     // Check argv[2] is a supported type of file, not something else
     struct stat st;
     if (stat(argv[2], &st) == -1) {
-      perror("Could not stat file");
+      perror("Failed to stat file");
       exit(EXIT_FAILURE);
     }
     if (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode)) {
@@ -259,13 +259,13 @@ int main(int argc, char **argv) {
     // Open a port for the server, using the global port var
     int server_socket_fd = server_socket_open(&port);
     if (server_socket_fd == -1) {
-      perror("Server socket was not opened");
+      perror("Failed to open server socket");
       exit(EXIT_FAILURE);
     }
 
     // Start listening for connections, with a maximum of one queued connection
     if (listen(server_socket_fd, 1)) {
-      perror("listen failed");
+      perror("Failed to listen");
       exit(EXIT_FAILURE);
     }
 
