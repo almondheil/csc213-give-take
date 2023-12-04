@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "file.h"
+#include "filereader.h"
 #include "message.h"
 
 int send_file(int sock_fd, file_t *file) {

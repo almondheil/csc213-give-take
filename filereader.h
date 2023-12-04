@@ -1,5 +1,5 @@
 /**
- * file.h
+ * filereader.h
  *
  * Read and write files on disk, in a form that can be sent across the network.
  */

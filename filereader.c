@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "file.h"
+#include "filereader.h"
 #include "utils.h"
 
 // Manually keep track of how many files we have open

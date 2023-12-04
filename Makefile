@@ -5,10 +5,10 @@ CFLAGS := -Wall -g #-fsanitize=address
 
 all: give take
 
-give: give.c message.c utils.c file.c logging.c
+give: give.c message.c utils.c filereader.c logging.c
 	${CC} ${CFLAGS} -lpthread -o $@ $^
 
-take: take.c message.c utils.c file.c
+take: take.c message.c utils.c filereader.c
 	${CC} ${CFLAGS} -o $@ $^
 
 clean:
