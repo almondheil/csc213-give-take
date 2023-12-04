@@ -129,8 +129,6 @@ void *receive_client_requests(void *arg) {
  * \param target_username  User to send the file.
  * \param file             File stored in memory.
  * \param socket_fd        Network socket to send through.
- * \param host_port        Port the file is being hosted on.
- * \param host_name        Name of the host creating the file.
  * \return                 0 if there are no errors, -1 if there are errors.
  *                         Sets errno on failure.
  */
@@ -164,18 +162,6 @@ int host_file(char *restrict target_username, file_t *file, int socket_fd) {
   return 0;
 }
 
-/**
- * Print the usage of this program
- *
- * \param prog_name  The program name to include in usage help
- */
-void print_usage(char *prog_name) {
-  fprintf(stderr, "Usage: %s USER FILE         (give file)\n", prog_name);
-  fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", prog_name);
-  fprintf(stderr, "       %s --status          (list pending)\n", prog_name);
-}
-
-// Entry point to the program.
 int main(int argc, char **argv) {
   /*
    * give --status
@@ -190,7 +176,9 @@ int main(int argc, char **argv) {
    */
   if (argc != 3) {
     // They definitely gave the wrong number of arguments
-    print_usage(argv[0]);
+    fprintf(stderr, "Usage: %s USER FILE         (give file)\n", argv[0]);
+    fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", argv[0]);
+    fprintf(stderr, "       %s --status          (list pending)\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 

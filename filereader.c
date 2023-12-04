@@ -88,7 +88,6 @@ int read_regular(char *path, file_t *file) {
  *
  * \param path   Path to the directory
  * \param file   Struct to read the file into
- * \param nopen  Number of files currently open
  * \return       0 if everything went well, -1 on error
  */
 int read_directory(char *path, file_t *file) {

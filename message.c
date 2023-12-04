@@ -1,6 +1,3 @@
-// message.c
-// Modified from message.c used in the networking exercise
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
