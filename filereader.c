@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "utils.h"
@@ -56,16 +57,13 @@ int read_regular(char* path, file_t* file) {
     return -1;
   }
 
-  // seek to the end of the file, store its size, then seek back to the front
-  if (fseek(stream, 0, SEEK_END) != 0) {
-    perror("Failed to seek to file end");
+  // try to stat the file, so we can get its size
+  struct stat st;
+  if (fstat(fileno(stream), &st) == -1) {
+    perror("Failed to stat file size");
     return -1;
   }
-  file->size = ftell(stream);
-  if (fseek(stream, 0, SEEK_SET) != 0) {
-    perror("Failed to seek to file start");
-    return -1;
-  }
+  file->size = st.st_size;
 
   // make space for the file contents
   file->contents.data = malloc(file->size);
