@@ -199,6 +199,7 @@ void print_give_status() {
     // Just skip the line if anything went wrong
     if (host == NULL || port == NULL || file_name == NULL ||
         target_user == NULL || cwd == NULL) {
+      fprintf(stderr, "Malformed line when reading status file!\n");
       continue;
     }
 
@@ -207,7 +208,7 @@ void print_give_status() {
     if (newline != NULL) {
       *newline = '\0';
     } else {
-      // Malformed file
+      fprintf(stderr, "Malformed line when reading status file!\n");
       continue;
     }
 
