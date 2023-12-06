@@ -1,0 +1,24 @@
+BasedOnStyle: Google
+IndentWidth: 2
+ColumnLimit: 100
+DerivePointerAlignment: false
+PointerAlignment: Left
+AlignOperands: true
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AllowShortFunctionsOnASingleLine: None
+BinPackArguments: true
+BinPackParameters: false
+AlignAfterOpenBracket: Align
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# Regroup includes by category
+IncludeBlocks: Regroup
+IncludeCategories:
+  # System Includes
+  - Regex: '^<[[:alnum:]./_]+\.h>'
+    Priority: 1
+
+  # Local Includes
+  - Regex: '.*'
+    Priority: 2

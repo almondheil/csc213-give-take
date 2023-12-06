@@ -1,3 +1,5 @@
+#include "utils.h"
+
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,11 +7,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "utils.h"
-
-char *get_shortname(char *path) {
+char* get_shortname(char* path) {
   // Find the last / character in the path (if it exists)
-  char *last_slash = strrchr(path, '/');
+  char* last_slash = strrchr(path, '/');
 
   // If there is a /, trim to only everything after.
   // this turns /path/to/file.ext into file.ext
@@ -20,15 +20,15 @@ char *get_shortname(char *path) {
   }
 }
 
-void parse_connection_info(char *in, char *hostname, unsigned short *port) {
+void parse_connection_info(char* in, char* hostname, unsigned short* port) {
   // Determine if there is a : in the input string
 
   // Hold up to two substrings - to the hostname, and to the port
-  char *parts[2];
+  char* parts[2];
 
   // Read up to two substrings into parts
-  char *token;
-  char *rest = in;
+  char* token;
+  char* rest = in;
   int i = 0;
   while ((token = strtok_r(rest, ":", &rest))) {
     if (i >= 2) {
@@ -52,12 +52,12 @@ void parse_connection_info(char *in, char *hostname, unsigned short *port) {
   }
 }
 
-char *get_username() {
+char* get_username() {
   // Get the effective uid
   uid_t uid = geteuid();
 
   // Find the user associated with that uid
-  struct passwd *pw = getpwuid(uid);
+  struct passwd* pw = getpwuid(uid);
   if (pw == NULL) {
     return NULL;
   }

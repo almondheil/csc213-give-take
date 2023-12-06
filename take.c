@@ -15,7 +15,7 @@
  * \param save_name  Name to save the file under, or NULL if the default name
  *                   should be used.
  */
-void take_file(int socket_fd, char *save_name) {
+void take_file(int socket_fd, char* save_name) {
   // Send a request for the data to the server side
   request_t req;
   req.username = get_username();
@@ -27,7 +27,7 @@ void take_file(int socket_fd, char *save_name) {
   }
 
   // Try to receive the data now
-  file_t *file = recv_file(socket_fd);
+  file_t* file = recv_file(socket_fd);
   if (file == NULL) {
     if (errno != 0) {
       perror("Failed to receive file");
@@ -38,7 +38,7 @@ void take_file(int socket_fd, char *save_name) {
   }
 
   // If a save name was provided, overwrite the default it was sent with
-  char *original_name = file->name;
+  char* original_name = file->name;
   if (save_name != NULL) {
     file->name = save_name;
   }
@@ -69,7 +69,7 @@ void take_file(int socket_fd, char *save_name) {
   free_file(file);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // Make sure there are the right number of parameters
   if (argc != 2 && argc != 3) {
     printf("Usage: %s [HOST:]PORT [NAME]    (take file)\n", argv[0]);
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   }
 
   // If the user trying to take from themselves, don't let them
-  char *take_username = get_username();
+  char* take_username = get_username();
   if (take_username == NULL) {
     fprintf(stderr, "Could not determine your username");
     exit(EXIT_FAILURE);
