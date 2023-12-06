@@ -1,3 +1,5 @@
+#include "message.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,9 +7,8 @@
 #include <unistd.h>
 
 #include "filereader.h"
-#include "message.h"
 
-int send_file(int sock_fd, file_t *file) {
+int send_file(int sock_fd, file_t* file) {
   // Send the type of the file
   if (write(sock_fd, &file->type, sizeof(filetype)) != sizeof(filetype)) {
     return -1;
@@ -28,8 +29,7 @@ int send_file(int sock_fd, file_t *file) {
   size_t bytes_written = 0;
   while (bytes_written < name_len) {
     // Write the remaining message
-    ssize_t rc = write(sock_fd, file->name + bytes_written,
-        name_len - bytes_written);
+    ssize_t rc = write(sock_fd, file->name + bytes_written, name_len - bytes_written);
 
     // if the write failed, there was an error
     if (rc <= 0) {
@@ -46,12 +46,10 @@ int send_file(int sock_fd, file_t *file) {
     bytes_written = 0;
     while (bytes_written < file->size) {
       // write the remaining message
-      ssize_t rc = write(sock_fd, file->contents.data + bytes_written,
-                         file->size - bytes_written);
+      ssize_t rc = write(sock_fd, file->contents.data + bytes_written, file->size - bytes_written);
 
       // if the write failed, there was an error
-      if (rc <= 0)
-        return -1;
+      if (rc <= 0) return -1;
 
       bytes_written += rc;
     }
@@ -67,7 +65,7 @@ int send_file(int sock_fd, file_t *file) {
   return 0;
 }
 
-file_t *recv_file(int sock_fd) {
+file_t* recv_file(int sock_fd) {
   // Read the type of the file
   filetype type;
   if (read(sock_fd, &type, sizeof(filetype)) != sizeof(filetype)) {
@@ -87,7 +85,7 @@ file_t *recv_file(int sock_fd) {
   }
 
   // Create space to store the received file
-  file_t *file = malloc(sizeof(file_t));
+  file_t* file = malloc(sizeof(file_t));
   file->size = data_size;
   file->type = type;
 
@@ -101,8 +99,7 @@ file_t *recv_file(int sock_fd) {
   // Read the filename of the file
   size_t bytes_read = 0;
   while (bytes_read < filename_len) {
-    ssize_t rc = read(sock_fd, file->name + bytes_read,
-        filename_len - bytes_read);
+    ssize_t rc = read(sock_fd, file->name + bytes_read, filename_len - bytes_read);
 
     if (rc <= 0) {
       free_file(file);
@@ -127,8 +124,7 @@ file_t *recv_file(int sock_fd) {
     // Read the contents into our file struct
     bytes_read = 0;
     while (bytes_read < data_size) {
-      ssize_t rc = read(sock_fd, file->contents.data + bytes_read,
-                        data_size - bytes_read);
+      ssize_t rc = read(sock_fd, file->contents.data + bytes_read, data_size - bytes_read);
 
       if (rc <= 0) {
         free_file(file);
@@ -139,7 +135,7 @@ file_t *recv_file(int sock_fd) {
     }
   } else {
     // For a directory, make space for file->size number of entries
-    file->contents.entries = malloc(sizeof(file_t *) * file->size);
+    file->contents.entries = malloc(sizeof(file_t*) * file->size);
 
     // Then recursively receive each of those entries
     for (int i = 0; i < file->size; i++) {
@@ -155,7 +151,7 @@ file_t *recv_file(int sock_fd) {
   return file;
 }
 
-int send_request(int sock_fd, request_t *req) {
+int send_request(int sock_fd, request_t* req) {
   // Send how long the name is
   size_t name_len = sizeof(char) * strlen(req->username);
   if (write(sock_fd, &name_len, sizeof(size_t)) != sizeof(size_t)) {
@@ -166,12 +162,10 @@ int send_request(int sock_fd, request_t *req) {
   size_t bytes_written = 0;
   while (bytes_written < name_len) {
     // write the remaining message
-    ssize_t rc = write(sock_fd, req->username + bytes_written,
-        name_len - bytes_written);
+    ssize_t rc = write(sock_fd, req->username + bytes_written, name_len - bytes_written);
 
     // if the write failed, there was an error
-    if (rc <= 0)
-      return -1;
+    if (rc <= 0) return -1;
 
     bytes_written += rc;
   }
@@ -184,7 +178,7 @@ int send_request(int sock_fd, request_t *req) {
   return 0;
 }
 
-request_t *recv_request(int sock_fd) {
+request_t* recv_request(int sock_fd) {
   // Read the length of the name
   size_t name_len;
   if (read(sock_fd, &name_len, sizeof(size_t)) != sizeof(size_t)) {
@@ -192,14 +186,13 @@ request_t *recv_request(int sock_fd) {
   }
 
   // Create a struct to store the values we'll receive
-  request_t *req = malloc(sizeof(request_t));
+  request_t* req = malloc(sizeof(request_t));
   req->username = malloc(name_len + 1);
 
   // Read the name
   size_t bytes_read = 0;
   while (bytes_read < name_len) {
-    ssize_t rc = read(sock_fd, req->username + bytes_read,
-        name_len - bytes_read);
+    ssize_t rc = read(sock_fd, req->username + bytes_read, name_len - bytes_read);
 
     if (rc <= 0) {
       free(req->username);

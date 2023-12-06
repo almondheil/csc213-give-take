@@ -9,8 +9,8 @@
 #include <stdint.h>
 
 typedef enum {
-  F_REG, //< regular file
-  F_DIR  //< directory
+  F_REG,  //< regular file
+  F_DIR   //< directory
 } filetype;
 
 // File structure. Can either be a regular file or a directory.
@@ -18,13 +18,13 @@ typedef struct file {
   filetype type;
 
   // both normal and directory have a name and size
-  char *name;
+  char* name;
   size_t size;
 
   // Holds either data pointer or pointer to entries.
   union {
-    uint8_t *data;         //< F_REG only
-    struct file **entries; //< F_DIR only
+    uint8_t* data;          //< F_REG only
+    struct file** entries;  //< F_DIR only
   } contents;
 } file_t;
 
@@ -33,7 +33,7 @@ typedef struct file {
  *
  * \param file  File to free.
  */
-void free_file(file_t *file);
+void free_file(file_t* file);
 
 /**
  * Read a file of unknown type, returning malloc'd memory containing the file
@@ -42,7 +42,7 @@ void free_file(file_t *file);
  * \param path  Path to the file.
  * \return      Pointer to malloc'd file.
  */
-file_t *read_file(char *path);
+file_t* read_file(char* path);
 
 /**
  * Write a file of unknown type to disk.
@@ -51,4 +51,4 @@ file_t *read_file(char *path);
  * \param file  File data to write.
  * \return      0 if everything went well, -1 on error
  */
-int write_file(char *path, file_t *file);
+int write_file(char* path, file_t* file);

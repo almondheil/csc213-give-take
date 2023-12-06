@@ -19,7 +19,7 @@ typedef enum {
 
 // Action request, including requester username
 typedef struct {
-  char *username;
+  char* username;
   action_t action;
 } request_t;
 
@@ -30,7 +30,7 @@ typedef struct {
  * \param   file_data Filled out file data struct to be transferred
  * \return  0 if there were no errors, -1 otherwise
  */
-int send_file(int sock_fd, file_t *file_data);
+int send_file(int sock_fd, file_t* file_data);
 
 /**
  * Receive a file through a socket
@@ -39,7 +39,7 @@ int send_file(int sock_fd, file_t *file_data);
  * \return  A malloc'd filedata struct of the message if transfer was completed,
  *          NULL if something went wrong.
  */
-file_t *recv_file(int sock_fd);
+file_t* recv_file(int sock_fd);
 
 /**
  * Send a request through a socket
@@ -48,7 +48,7 @@ file_t *recv_file(int sock_fd);
  * \param   req Fiilled out request struct to be transferred
  * \return  0 if there were no errors, -1 otherwise
  */
-int send_request(int sock_fd, request_t *req);
+int send_request(int sock_fd, request_t* req);
 
 /**
  * Receive a request through a socket
@@ -57,4 +57,4 @@ int send_request(int sock_fd, request_t *req);
  * \return  A malloc'd request struct of the message if transfer was completed,
  *          NULL if something went wrong.
  */
-request_t *recv_request(int sock_fd);
+request_t* recv_request(int sock_fd);

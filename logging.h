@@ -18,8 +18,7 @@
  * \param port         The port the give is using.
  * \return             0 if everything went well, -1 on error
  */
-int add_give_status(char *file_name, char *target_user, char *host,
-                    unsigned int port);
+int add_give_status(char* file_name, char* target_user, char* host, unsigned int port);
 
 /**
  * Remove a give from the status file.
@@ -29,7 +28,7 @@ int add_give_status(char *file_name, char *target_user, char *host,
  * \return      1 if successfully removed, 0 if not removed but no errors, -1 on
  * error
  */
-int remove_give_status(char *host, unsigned int port);
+int remove_give_status(char* host, unsigned int port);
 
 /**
  * Print the contents of the status file.

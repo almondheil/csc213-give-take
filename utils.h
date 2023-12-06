@@ -13,7 +13,7 @@
  * \param path  Full path to file
  * \return      Pointer to the start of the shortname. Does not modify path.
  */
-char *get_shortname(char *path);
+char* get_shortname(char* path);
 
 /**
  * Parse connection info in the form server:port or port.
@@ -24,11 +24,11 @@ char *get_shortname(char *path);
  *                  hostname, either "localhost" or whatever the user inputs
  * \param port      Output pointer to connection port.
  */
-void parse_connection_info(char *in, char *hostname, unsigned short *port);
+void parse_connection_info(char* in, char* hostname, unsigned short* port);
 
 /**
  * Determine the username from the euid of the running process.
  *
  * \return Pointer to username if it exists, or NULL if it does not.
  */
-char *get_username();
+char* get_username();

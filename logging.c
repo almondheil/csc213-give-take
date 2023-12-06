@@ -1,3 +1,5 @@
+#include "logging.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,16 +7,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "logging.h"
-
 /**
  * Get an absolute path to the status file of this user.
  *
  * \return  Pointer to the path. Must be freed by the caller.
  */
-char *status_file_path() {
-  char *home_path = getenv("HOME");
-  char *status_file_path = malloc(sizeof(char) *
+char* status_file_path() {
+  char* home_path = getenv("HOME");
+  char* status_file_path = malloc(sizeof(char) *
       (strlen(home_path) + strlen("/") + strlen(STATUS_FILE_NAME) + 1));
   if (status_file_path == NULL) {
     return NULL;
@@ -27,16 +27,15 @@ char *status_file_path() {
   return status_file_path;
 }
 
-int add_give_status(char *file_name, char *target_user, char *host,
-                    unsigned int port) {
-  char *path = status_file_path();
+int add_give_status(char* file_name, char* target_user, char* host, unsigned int port) {
+  char* path = status_file_path();
   if (path == NULL) {
     perror("Failed to allocate space for status file name");
     return -1;
   }
 
   // Open the status file
-  FILE *stream = fopen(path, "a");
+  FILE* stream = fopen(path, "a");
   if (stream == NULL) {
     perror("Failed to open status file");
     free(path);
@@ -57,7 +56,7 @@ int add_give_status(char *file_name, char *target_user, char *host,
   // Determine the current time as well.
   int time_format_chars = strlen("YYYY-MM-DD HH:MM:SS") + 1;
   time_t now = time(NULL);
-  struct tm *local_time = localtime(&now);
+  struct tm* local_time = localtime(&now);
 
   // Format the time as YYYY-MM-DD HH:MM:SS
   char time_formatted[time_format_chars];
@@ -75,14 +74,14 @@ int add_give_status(char *file_name, char *target_user, char *host,
   return 0;
 }
 
-int remove_give_status(char *host, unsigned int port) {
+int remove_give_status(char* host, unsigned int port) {
   // Locate and open the original file
-  char *path = status_file_path();
+  char* path = status_file_path();
   if (path == NULL) {
     perror("Failed to allocate space for status file name");
     return -1;
   }
-  FILE *original = fopen(path, "r");
+  FILE* original = fopen(path, "r");
   if (original == NULL) {
     perror("Failed to open status file");
     free(path);
@@ -90,13 +89,12 @@ int remove_give_status(char *host, unsigned int port) {
   }
 
   // Construct a path to a tempfile we can use
-  char *temp_path = strdup(path);
-  temp_path = realloc(temp_path, sizeof(char) *
-      (strlen(temp_path) + strlen(".tmp") + 1));
+  char* temp_path = strdup(path);
+  temp_path = realloc(temp_path, sizeof(char) * (strlen(temp_path) + strlen(".tmp") + 1));
   strcat(temp_path, ".tmp");
 
   // Open that tempfile too, but in write mode
-  FILE *copy = fopen(temp_path, "w");
+  FILE* copy = fopen(temp_path, "w");
   if (copy == NULL) {
     perror("Failed to open temporary status file");
     free(path);
@@ -105,10 +103,10 @@ int remove_give_status(char *host, unsigned int port) {
 
   // Copy all lines into copy, EXCEPT the one we want to remove
   size_t sz = 0;
-  char *line = NULL;
+  char* line = NULL;
   ssize_t chars_read;
   while ((chars_read = getline(&line, &sz, original)) != -1) {
-    char *to_modify = strdup(line);
+    char* to_modify = strdup(line);
     if (to_modify == NULL) {
       perror("Failed to make space for line copy");
       fclose(original);
@@ -117,8 +115,8 @@ int remove_give_status(char *host, unsigned int port) {
     }
 
     // Attempt to pull the host and port out of the line
-    char *string_host = strtok(to_modify, ",");
-    char *string_port = strtok(NULL, ",");
+    char* string_host = strtok(to_modify, ",");
+    char* string_port = strtok(NULL, ",");
 
     // If strtok failed to parse, some formatting is wrong
     if (string_host == NULL || string_port == NULL) {
@@ -144,7 +142,7 @@ int remove_give_status(char *host, unsigned int port) {
   // Save and close both files
   if (fclose(original)) {
     perror("Failed to close original status file");
-    fclose(copy); //< attempt to close copy, even though it could fail
+    fclose(copy);  //< attempt to close copy, even though it could fail
     return -1;
   }
   if (fclose(copy)) {
@@ -168,12 +166,12 @@ int remove_give_status(char *host, unsigned int port) {
 
 void print_give_status() {
   // Locate and open the status file
-  char *path = status_file_path();
+  char* path = status_file_path();
   if (path == NULL) {
     perror("Failed to allocate space for status file name");
     return;
   }
-  FILE *stream = fopen(path, "r");
+  FILE* stream = fopen(path, "r");
   if (stream == NULL) {
     // Ignore ENOENT, file does not exits
     if (errno != ENOENT) {
@@ -185,26 +183,25 @@ void print_give_status() {
 
   // Read through every line of the file, printing them out
   size_t sz = 0;
-  char *line = NULL;
+  char* line = NULL;
   ssize_t chars_read;
   while ((chars_read = getline(&line, &sz, stream)) != -1) {
     // strtok for each one of the fields we're interested in
-    char *host = strtok(line, ",");
-    char *port = strtok(NULL, ",");
-    char *file_name = strtok(NULL, ",");
-    char *target_user = strtok(NULL, ",");
-    char *time = strtok(NULL, ",");
-    char *cwd = strtok(NULL, ",");
+    char* host = strtok(line, ",");
+    char* port = strtok(NULL, ",");
+    char* file_name = strtok(NULL, ",");
+    char* target_user = strtok(NULL, ",");
+    char* time = strtok(NULL, ",");
+    char* cwd = strtok(NULL, ",");
 
     // Just skip the line if anything went wrong
-    if (host == NULL || port == NULL || file_name == NULL ||
-        target_user == NULL || cwd == NULL) {
+    if (host == NULL || port == NULL || file_name == NULL || target_user == NULL || cwd == NULL) {
       fprintf(stderr, "Malformed line when reading status file!\n");
       continue;
     }
 
     // Attempt to remove the \n from the end of cwd
-    char *newline = strchr(cwd, '\n');
+    char* newline = strchr(cwd, '\n');
     if (newline != NULL) {
       *newline = '\0';
     } else {

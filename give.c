@@ -21,9 +21,9 @@ char host_name[MAX_HOSTNAME_LEN];
 // Arguments needed to communicate with a client in a thread
 typedef struct {
   int client_socket_fd;
-  file_t *data;
-  char *target_username;
-  char *owner_username;
+  file_t* data;
+  char* target_username;
+  char* owner_username;
 } comm_args_t;
 
 /**
@@ -32,9 +32,9 @@ typedef struct {
  * \param name  Username to test
  * \return      true if the user exists, false otherwise
  */
-bool user_exists(char *name) {
+bool user_exists(char* name) {
   // Get the user by name
-  struct passwd *user = getpwnam(name);
+  struct passwd* user = getpwnam(name);
 
   // getpwnam returns NULL if the user does not exist
   return (user != NULL);
@@ -47,17 +47,17 @@ bool user_exists(char *name) {
  *             data. Will be free'd before this thread exits to avoid leaks.
  * \return     NULL, only here because threads must return something
  */
-void *receive_client_requests(void *arg) {
+void* receive_client_requests(void* arg) {
   // Unpack args struct passed in
-  comm_args_t *args = (comm_args_t *)arg;
+  comm_args_t* args = (comm_args_t*)arg;
   int client_socket_fd = args->client_socket_fd;
-  file_t *data = args->data;
-  char *target_username = args->target_username;
-  char *owner_username = args->owner_username;
+  file_t* data = args->data;
+  char* target_username = args->target_username;
+  char* owner_username = args->owner_username;
 
   while (true) {
     // Recieve a request that the client sends us
-    request_t *req = recv_request(client_socket_fd);
+    request_t* req = recv_request(client_socket_fd);
     if (req == NULL) {
       free(args);
 
@@ -69,10 +69,8 @@ void *receive_client_requests(void *arg) {
     }
 
     // Terminate the server if owner sends CANCEL or target sends DONE
-    if ((req->action == QUIT_SERVER &&
-         strcmp(req->username, owner_username) == 0) ||
-        (req->action == QUIT_SERVER &&
-         strcmp(req->username, target_username) == 0)) {
+    if ((req->action == QUIT_SERVER && strcmp(req->username, owner_username) == 0) ||
+        (req->action == QUIT_SERVER && strcmp(req->username, target_username) == 0)) {
       free(args);
       free(req->username);
       free(req);
@@ -88,8 +86,7 @@ void *receive_client_requests(void *arg) {
     }
 
     // Send the data if the target sends SEND_DATA
-    else if (req->action == SEND_DATA &&
-             strcmp(req->username, target_username) == 0) {
+    else if (req->action == SEND_DATA && strcmp(req->username, target_username) == 0) {
       int rc = send_file(client_socket_fd, data);
       if (rc == -1) {
         free(args);
@@ -132,7 +129,7 @@ void *receive_client_requests(void *arg) {
  * \return                 0 if there are no errors, -1 if there are errors.
  *                         Sets errno on failure.
  */
-int host_file(char *restrict target_username, file_t *file, int socket_fd) {
+int host_file(char* restrict target_username, file_t* file, int socket_fd) {
   // Accept new connections while the server is running
   while (true) {
     int client_socket_fd = server_socket_accept(socket_fd);
@@ -143,7 +140,7 @@ int host_file(char *restrict target_username, file_t *file, int socket_fd) {
 
     // Set up args for this thread
     // They will be freed when the thread exits
-    comm_args_t *args = malloc(sizeof(comm_args_t));
+    comm_args_t* args = malloc(sizeof(comm_args_t));
     args->client_socket_fd = client_socket_fd;
     args->data = file;
     args->target_username = target_username;
@@ -162,13 +159,13 @@ int host_file(char *restrict target_username, file_t *file, int socket_fd) {
   return 0;
 }
 
-void print_usage(char *prog_name) {
+void print_usage(char* prog_name) {
   fprintf(stderr, "Usage: %s USER FILE         (give file)\n", prog_name);
   fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", prog_name);
   fprintf(stderr, "       %s --status          (list pending)\n", prog_name);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   /*
    * give --status
    */
@@ -275,7 +272,7 @@ int main(int argc, char **argv) {
     }
 
     // Trim the trailing / off the provided file if it exists
-    char *file_path = argv[2];
+    char* file_path = argv[2];
     int len = strlen(file_path);
     if (file_path[len - 1] == '/') {
       file_path[len - 1] = '\0';
@@ -283,24 +280,24 @@ int main(int argc, char **argv) {
 
     // Attempt to read the file into memory now.
     // If there's an error, we want to know before daemonizing
-    file_t *file = read_file(argv[2]);
+    file_t* file = read_file(argv[2]);
     if (file == NULL) {
       exit(EXIT_FAILURE);
     }
 
     // Fork off a child process to do the work
     switch (fork()) {
-    case -1:
-      // Report if fork() had an error
-      perror("Failed to create a daemon");
-      exit(EXIT_FAILURE);
-    case 0:
-      // Child goes onwards in the code
-      break;
-    default:
-      // Parent does not wait for child
-      printf("Server listening on port %u\n", port);
-      return 0;
+      case -1:
+        // Report if fork() had an error
+        perror("Failed to create a daemon");
+        exit(EXIT_FAILURE);
+      case 0:
+        // Child goes onwards in the code
+        break;
+      default:
+        // Parent does not wait for child
+        printf("Server listening on port %u\n", port);
+        return 0;
     }
 
     // Detach from the parent process so we keep running even if they log out
@@ -316,7 +313,7 @@ int main(int argc, char **argv) {
     }
 
     // Trim the hostname from HOST.cs.grinnell.edu to HOST
-    char *first_dot = strchr(host_name, '.');
+    char* first_dot = strchr(host_name, '.');
     if (first_dot != NULL) {
       *first_dot = '\0';
     }

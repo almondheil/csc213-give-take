@@ -1,3 +1,5 @@
+#include "filereader.h"
+
 #include <dirent.h>
 #include <errno.h>
 #include <stdint.h>
@@ -7,29 +9,28 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "filereader.h"
 #include "utils.h"
 
 // Manually keep track of how many files we have open
 #define MAX_FILES_OPEN 8
 int files_open = 0;
 
-void free_file(file_t *file) {
+void free_file(file_t* file) {
   free(file->name);
   switch (file->type) {
-  case F_REG:
-    // Regular files just need to have their data freed
-    free(file->contents.data);
-    break;
-  case F_DIR:
-    // For directories, we need to recursively free all the entries
-    for (size_t i = 0; i < file->size; i++) {
-      free_file(file->contents.entries[i]);
-    }
+    case F_REG:
+      // Regular files just need to have their data freed
+      free(file->contents.data);
+      break;
+    case F_DIR:
+      // For directories, we need to recursively free all the entries
+      for (size_t i = 0; i < file->size; i++) {
+        free_file(file->contents.entries[i]);
+      }
 
-    // Then, we can free where the entries are stored
-    free(file->contents.entries);
-    break;
+      // Then, we can free where the entries are stored
+      free(file->contents.entries);
+      break;
   }
   free(file);
 }
@@ -41,7 +42,7 @@ void free_file(file_t *file) {
  * \param file  Pointer to file struct. Data will be filled out.
  * \return      0 if everything went well, -1 on error
  */
-int read_regular(char *path, file_t *file) {
+int read_regular(char* path, file_t* file) {
   // check that we don't have too many files open
   if (files_open > MAX_FILES_OPEN) {
     fprintf(stderr, "Exceeded max %d files open at once!\n", MAX_FILES_OPEN);
@@ -49,7 +50,7 @@ int read_regular(char *path, file_t *file) {
   }
 
   // try to open the file
-  FILE *stream = fopen(path, "r");
+  FILE* stream = fopen(path, "r");
   if (stream == NULL) {
     perror("Failed to open regular file");
     return -1;
@@ -90,14 +91,15 @@ int read_regular(char *path, file_t *file) {
  * \param file   Struct to read the file into
  * \return       0 if everything went well, -1 on error
  */
-int read_directory(char *path, file_t *file) {
+int read_directory(char* path, file_t* file) {
   // check that we don't have too many files open
   if (files_open > MAX_FILES_OPEN) {
-    fprintf(stderr, "Exceeded max %d files open at once due to directory recursion!\n", MAX_FILES_OPEN);
+    fprintf(stderr, "Exceeded max %d files open at once due to directory recursion!\n",
+            MAX_FILES_OPEN);
     return -1;
   }
 
-  DIR *dir = opendir(path);
+  DIR* dir = opendir(path);
   if (dir == NULL) {
     perror("Failed to open directory");
     return -1;
@@ -106,7 +108,7 @@ int read_directory(char *path, file_t *file) {
   file->contents.entries = NULL;
   file->size = 0;
 
-  struct dirent *entry;
+  struct dirent* entry;
   while ((entry = readdir(dir)) != NULL) {
     // Ignore the special files . and ..
     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
@@ -115,7 +117,7 @@ int read_directory(char *path, file_t *file) {
 
     // Malloc space for the path to the next entry
     int next_path_len = strlen(path) + strlen(entry->d_name);
-    char *next_path = malloc(sizeof(char) * (next_path_len + 1));
+    char* next_path = malloc(sizeof(char) * (next_path_len + 1));
     if (next_path == NULL) {
       perror("Failed to allocate space for path");
       return -1;
@@ -129,7 +131,7 @@ int read_directory(char *path, file_t *file) {
     file->contents.entries = realloc(file->contents.entries, (file->size + 1) * sizeof(file_t));
 
     // Set that entry by recursively calling read_file on it
-    file_t *entry_file = read_file(next_path);
+    file_t* entry_file = read_file(next_path);
     if (entry_file == NULL) {
       return -1;
     }
@@ -152,7 +154,7 @@ int read_directory(char *path, file_t *file) {
   return 0;
 }
 
-file_t *read_file(char *path) {
+file_t* read_file(char* path) {
   // stat the file, also checking that it exists
   struct stat st;
   if (stat(path, &st) == -1) {
@@ -161,7 +163,7 @@ file_t *read_file(char *path) {
   }
 
   // Create space to store file info
-  file_t *new = malloc(sizeof(file_t));
+  file_t* new = malloc(sizeof(file_t));
   if (new == NULL) {
     perror("Failed to allocate file struct");
     // free nothing, no allocations have been made
@@ -195,7 +197,7 @@ file_t *read_file(char *path) {
 
     // The path used may differ from the one provided because user
     // input can be ambiguous.
-    char *actual_path = strdup(path);
+    char* actual_path = strdup(path);
     if (actual_path == NULL) {
       perror("Failed to copy file path");
       return NULL;
@@ -236,10 +238,10 @@ file_t *read_file(char *path) {
  * \param file  File data to write.
  * \return      0 if everything went well, -1 on error
  */
-int write_regular(char *path, file_t *file) {
+int write_regular(char* path, file_t* file) {
   // Construct the path to the file
   int file_path_len = strlen(path) + strlen(file->name);
-  char *file_path = malloc(sizeof(char) * (file_path_len + 1));
+  char* file_path = malloc(sizeof(char) * (file_path_len + 1));
   if (file_path == NULL) {
     perror("Failed to allocate space for filename");
     return -1;
@@ -255,7 +257,7 @@ int write_regular(char *path, file_t *file) {
   }
 
   // Open that file for writing
-  FILE *stream = fopen(file_path, "w");
+  FILE* stream = fopen(file_path, "w");
   if (stream == NULL) {
     perror("Failed to open file");
     free(file_path);
@@ -289,10 +291,10 @@ int write_regular(char *path, file_t *file) {
  * \param file  File data to write.
  * \return      0 if everything went well, -1 on error
  */
-int write_directory(char *path, file_t *file) {
+int write_directory(char* path, file_t* file) {
   // Construct the path to the directory
   int dir_path_len = strlen(path) + strlen(file->name) + strlen("/");
-  char *dir_path = malloc(sizeof(char) * (dir_path_len + 1));
+  char* dir_path = malloc(sizeof(char) * (dir_path_len + 1));
   if (dir_path == NULL) {
     perror("Failed to allocate space for filename");
     return -1;
@@ -329,18 +331,18 @@ int write_directory(char *path, file_t *file) {
   return 0;
 }
 
-int write_file(char *path, file_t *file) {
+int write_file(char* path, file_t* file) {
   switch (file->type) {
-  case F_REG:
-    if (write_regular(path, file) == -1) {
-      return -1;
-    }
-    break;
-  case F_DIR:
-    if (write_directory(path, file) == -1) {
-      return -1;
-    }
-    break;
+    case F_REG:
+      if (write_regular(path, file) == -1) {
+        return -1;
+      }
+      break;
+    case F_DIR:
+      if (write_directory(path, file) == -1) {
+        return -1;
+      }
+      break;
   }
 
   return 0;
