@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <stdint.h>
-
 #include "filereader.h"
 
 // Possible actions for a request

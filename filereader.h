@@ -7,6 +7,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef enum {
   F_REG,  //< regular file
