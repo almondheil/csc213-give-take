@@ -160,9 +160,10 @@ int host_file(char* restrict target_username, file_t* file, int socket_fd) {
 }
 
 void print_usage(char* prog_name) {
-  fprintf(stderr, "Usage: %s USER FILE         (give file)\n", prog_name);
-  fprintf(stderr, "       %s -c [HOST:]PORT    (cancel give)\n", prog_name);
-  fprintf(stderr, "       %s --status          (list pending)\n", prog_name);
+  fprintf(stderr, "Usage: %s USER FILE\n", prog_name);
+  fprintf(stderr, "       %s USER DIRECTORY\n", prog_name);
+  fprintf(stderr, "       %s -c [HOST:]PORT\n", prog_name);
+  fprintf(stderr, "       %s --status\n", prog_name);
 }
 
 int main(int argc, char** argv) {
