@@ -17,24 +17,17 @@
 size_t persistent_memory_used = 0;
 
 void free_file(file_t* file) {
-  printf("%p\n", file);
-  // if (file == (file_t*) 0xbebebebebebebebe) {
-  //  return; // TODO WHY IS THIS  HELPFUL? why bebebe?
-  // }
   if (file == NULL) {
     return;
   }
-  printf("%s ", file->name);
   free(file->name);
   switch (file->type) {
     case F_REG:
-      printf("\n");
       // Regular files just need to have their data freed
       free(file->contents.data);
       break;
     case F_DIR:
       // For directories, we need to recursively free all the entries
-      printf("dir size is %zu\n", file->size);
       for (size_t i = 0; i < file->size; i++) {
         free_file(file->contents.entries[i]);
       }
@@ -145,8 +138,9 @@ int read_directory(char* path, file_t* file) {
   }
 
   // Allocate space in the dir struct to store each entry and mark that memory as used
+  // Use calloc so any failed reads will be NULL
   file->size = num_entries;
-  file->contents.entries = malloc(file->size * sizeof(file_t));
+  file->contents.entries = calloc(file->size, sizeof(file_t));
   persistent_memory_used += file->size * sizeof(file_t);
 
   // Close the directory now
