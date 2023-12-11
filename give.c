@@ -296,8 +296,9 @@ int main(int argc, char** argv) {
         break;
       default:
         // Parent does not wait for child
+        free_file(file);
         printf("Server listening on port %u\n", port);
-        return 0;
+        exit(0);
     }
 
     // Detach from the parent process so we keep running even if they log out
@@ -327,8 +328,8 @@ int main(int argc, char** argv) {
       exit(EXIT_FAILURE);
     }
 
-    // We never actually exit from host_file, but everything gets cleaned up
-    // by whichever thread receives the quit server request.
+    // With no errors we never return from host_file, that's fine though
+    // because it cleans up what is possible to clean up
   }
 
   return 0;

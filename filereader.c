@@ -12,19 +12,29 @@
 
 #include "utils.h"
 
-// Manually keep track of how many files we have open
-#define MAX_FILES_OPEN 8
-int files_open = 0;
+// Don't ever use more than 512 MB of memory. Bad idea!
+#define MAX_PERSISTENT_MEMORY 0x20000000
+size_t persistent_memory_used = 0;
 
 void free_file(file_t* file) {
+  printf("%p\n", file);
+  // if (file == (file_t*) 0xbebebebebebebebe) {
+  //  return; // TODO WHY IS THIS  HELPFUL? why bebebe?
+  // }
+  if (file == NULL) {
+    return;
+  }
+  printf("%s ", file->name);
   free(file->name);
   switch (file->type) {
     case F_REG:
+      printf("\n");
       // Regular files just need to have their data freed
       free(file->contents.data);
       break;
     case F_DIR:
       // For directories, we need to recursively free all the entries
+      printf("dir size is %zu\n", file->size);
       for (size_t i = 0; i < file->size; i++) {
         free_file(file->contents.entries[i]);
       }
@@ -44,12 +54,6 @@ void free_file(file_t* file) {
  * \return      0 if everything went well, -1 on error
  */
 int read_regular(char* path, file_t* file) {
-  // check that we don't have too many files open
-  if (files_open > MAX_FILES_OPEN) {
-    fprintf(stderr, "Exceeded max %d files open at once!\n", MAX_FILES_OPEN);
-    return -1;
-  }
-
   // try to open the file
   FILE* stream = fopen(path, "r");
   if (stream == NULL) {
@@ -65,16 +69,25 @@ int read_regular(char* path, file_t* file) {
   }
   file->size = st.st_size;
 
-  // make space for the file contents
+  // make space for the file contents and mark that memory as used
   file->contents.data = malloc(file->size);
   if (file->contents.data == NULL) {
     perror("Failed to malloc space for file contents");
     return -1;
   }
+  persistent_memory_used += file->size;
 
   // read the contents of the file into the malloc'd space
   if (fread(file->contents.data, 1, file->size, stream) != file->size) {
     perror("Failed to read file contents");
+    free(file->contents.data);
+    return -1;
+  }
+
+  // Close the file
+  if (fclose(stream)) {
+    perror("Failed to close regular file");
+    free(file->contents.data);
     return -1;
   }
 
@@ -90,13 +103,6 @@ int read_regular(char* path, file_t* file) {
  * \return       0 if everything went well, -1 on error
  */
 int read_directory(char* path, file_t* file) {
-  // check that we don't have too many files open
-  if (files_open > MAX_FILES_OPEN) {
-    fprintf(stderr, "Exceeded max %d files open at once due to directory recursion!\n",
-            MAX_FILES_OPEN);
-    return -1;
-  }
-
   DIR* dir = opendir(path);
   if (dir == NULL) {
     perror("Failed to open directory");
@@ -106,6 +112,11 @@ int read_directory(char* path, file_t* file) {
   file->contents.entries = NULL;
   file->size = 0;
 
+  // Prepare to store the paths of all entries
+  char** all_entries = NULL;
+  int num_entries = 0;
+
+  // Read all directory entries (except . and ..)
   struct dirent* entry;
   while ((entry = readdir(dir)) != NULL) {
     // Ignore the special files . and ..
@@ -125,22 +136,18 @@ int read_directory(char* path, file_t* file) {
     strcpy(next_path, path);
     strcat(next_path, entry->d_name);
 
-    // Realloc the entries one larger to make space for the new file
-    file->contents.entries = realloc(file->contents.entries, (file->size + 1) * sizeof(file_t));
+    // Realloc the list of entries one larger to make space
+    all_entries = realloc(all_entries, (num_entries + 1) * sizeof(char*));
 
-    // Set that entry by recursively calling read_file on it
-    file_t* entry_file = read_file(next_path);
-    if (entry_file == NULL) {
-      return -1;
-    }
-    file->contents.entries[file->size] = entry_file;
-
-    // Free the malloc'd path
-    free(next_path);
-
-    // Increase the stored number of entries
-    file->size++;
+    // Store that path to be recursed into later
+    all_entries[num_entries] = next_path;
+    num_entries++;
   }
+
+  // Allocate space in the dir struct to store each entry and mark that memory as used
+  file->size = num_entries;
+  file->contents.entries = malloc(file->size * sizeof(file_t));
+  persistent_memory_used += file->size * sizeof(file_t);
 
   // Close the directory now
   if (closedir(dir) == -1) {
@@ -148,20 +155,41 @@ int read_directory(char* path, file_t* file) {
     return -1;
   }
 
+  // Recurse into each entry, storing the data
+  for (int i = 0; i < num_entries; i++) {
+    // Recursively read the entry, storing it in this file
+    file_t* entry_file = read_file(all_entries[i]);
+    if (entry_file == NULL) {
+      return -1;
+    }
+    file->contents.entries[i] = entry_file;
+    // TODO: But like how is it sneaking in though? I don't get it
+    if (entry_file == (file_t*) 0x7ffff7f78c20) {
+      printf("AHAHAHAHAHA\n");
+    }
+
+    // Also free the path to that entry, we're done w/ it
+    free(all_entries[i]);
+  }
+
+  // Free the temp memory we used to store the entries
+  free(all_entries);
+
   // All went well!
   return 0;
 }
 
 file_t* read_file(char* path) {
-  // stat the file, also checking that it exists
-  struct stat st;
-  if (stat(path, &st) == -1) {
-    perror("Failed to stat file");
+  // before we do anything, see how we're doing on used memory.
+  // if we go over, stop now and give up.
+  if (persistent_memory_used > MAX_PERSISTENT_MEMORY) {
+    fprintf(stderr, "Used more than 512MB memory! Refusing to continue.\n");
     return NULL;
   }
 
   // Create space to store file info
   file_t* new = malloc(sizeof(file_t));
+  persistent_memory_used += sizeof(file_t);
   if (new == NULL) {
     perror("Failed to allocate file struct");
     // free nothing, no allocations have been made
@@ -176,18 +204,24 @@ file_t* read_file(char* path) {
     return NULL;
   }
 
+  // stat the file, also checking that it exists
+  struct stat st;
+  if (stat(path, &st) == -1) {
+    perror("Failed to stat file");
+    free_file(new);
+    return NULL;
+  }
+
   // Handle the file contents. May be a directory or a regular file
-  if (S_ISREG(st.st_mode)) {
+  else if (S_ISREG(st.st_mode)) {
     new->type = F_REG;
     new->contents.data = NULL;
 
     // Attempt to read the file contents and return them.
-    files_open++;
     if (read_regular(path, new) == -1) {
       free_file(new);
       return NULL;
     }
-    files_open--;
     return new;
   } else if (S_ISDIR(st.st_mode)) {
     new->type = F_DIR;
@@ -198,6 +232,7 @@ file_t* read_file(char* path) {
     char* actual_path = strdup(path);
     if (actual_path == NULL) {
       perror("Failed to copy file path");
+      free_file(new);
       return NULL;
     }
 
@@ -210,12 +245,10 @@ file_t* read_file(char* path) {
     }
 
     // Attempt to recursively read the directory contents and return them
-    files_open++;
     if (read_directory(actual_path, new) == -1) {
       free_file(new);
       return NULL;
     }
-    files_open--;
 
     // Free duplicated string
     free(actual_path);
