@@ -12,8 +12,8 @@
 
 #include "utils.h"
 
-// Don't ever use more than 512 MB of memory. Bad idea!
-#define MAX_PERSISTENT_MEMORY 0x20000000
+// Don't ever use more than 256 MB of persistent memory
+#define MAX_PERSISTENT_MEMORY 0x10000000
 size_t persistent_memory_used = 0;
 
 void free_file(file_t* file) {
@@ -177,7 +177,7 @@ file_t* read_file(char* path) {
   // before we do anything, see how we're doing on used memory.
   // if we go over, stop now and give up.
   if (persistent_memory_used > MAX_PERSISTENT_MEMORY) {
-    fprintf(stderr, "Used more than 512MB memory! Refusing to continue.\n");
+    fprintf(stderr, "Used more than 256MB memory! Refusing to continue.\n");
     return NULL;
   }
 
