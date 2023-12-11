@@ -16,6 +16,22 @@
 #define MAX_PERSISTENT_MEMORY 0x10000000
 size_t persistent_memory_used = 0;
 
+/**
+ * Check whether using more persistent memory will be within permissible
+ * limits. When allocation would go over cap, also prints a message so we
+ * only need to have a text representation of the cap in one place.
+ *
+ * \param s  Possible size to be allocated
+ * \return   0 if allocating memory is fine, 1 if it would go over limit.
+ */
+int check_persistent_memory(size_t s) {
+  if (persistent_memory_used + s > MAX_PERSISTENT_MEMORY) {
+    fprintf(stderr, "Sending file(s) would use more than 256MB of memory!\n");
+    return 1;
+  }
+  return 0;
+}
+
 void free_file(file_t* file) {
   if (file == NULL) {
     return;
@@ -63,12 +79,15 @@ int read_regular(char* path, file_t* file) {
   file->size = st.st_size;
 
   // make space for the file contents and mark that memory as used
+  if (check_persistent_memory(file->size)) {
+    return -1;
+  }
   file->contents.data = malloc(file->size);
+  persistent_memory_used += file->size;
   if (file->contents.data == NULL) {
     perror("Failed to malloc space for file contents");
     return -1;
   }
-  persistent_memory_used += file->size;
 
   // read the contents of the file into the malloc'd space
   if (fread(file->contents.data, 1, file->size, stream) != file->size) {
@@ -136,10 +155,13 @@ int read_directory(char* path, file_t* file) {
     all_entries[num_entries] = next_path;
     num_entries++;
   }
+  file->size = num_entries;
 
   // Allocate space in the dir struct to store each entry and mark that memory as used
   // Use calloc so any failed reads will be NULL
-  file->size = num_entries;
+  if (check_persistent_memory(file->size)) {
+    return -1;
+  }
   file->contents.entries = calloc(file->size, sizeof(file_t));
   persistent_memory_used += file->size * sizeof(file_t);
 
@@ -154,13 +176,11 @@ int read_directory(char* path, file_t* file) {
     // Recursively read the entry, storing it in this file
     file_t* entry_file = read_file(all_entries[i]);
     if (entry_file == NULL) {
+      free(all_entries[i]);
+      free(all_entries);
       return -1;
     }
     file->contents.entries[i] = entry_file;
-    // TODO: But like how is it sneaking in though? I don't get it
-    if (entry_file == (file_t*) 0x7ffff7f78c20) {
-      printf("AHAHAHAHAHA\n");
-    }
 
     // Also free the path to that entry, we're done w/ it
     free(all_entries[i]);
@@ -174,14 +194,10 @@ int read_directory(char* path, file_t* file) {
 }
 
 file_t* read_file(char* path) {
-  // before we do anything, see how we're doing on used memory.
-  // if we go over, stop now and give up.
-  if (persistent_memory_used > MAX_PERSISTENT_MEMORY) {
-    fprintf(stderr, "Used more than 256MB memory! Refusing to continue.\n");
+  // Attempt to malloc new memory for the file data storage.
+  if (check_persistent_memory(sizeof(file_t))) {
     return NULL;
   }
-
-  // Create space to store file info
   file_t* new = malloc(sizeof(file_t));
   persistent_memory_used += sizeof(file_t);
   if (new == NULL) {
