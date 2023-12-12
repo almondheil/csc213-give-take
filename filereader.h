@@ -41,9 +41,10 @@ void free_file(file_t* file);
  * info. For directories, this includes any directory entries.
  *
  * \param path  Path to the file.
- * \return      Pointer to malloc'd file.
+ * \param file  Pointer to read file into.
+ * \return      0 on success, -1 on error
  */
-file_t* read_file(char* path);
+int read_file(char* path, file_t* file);
 
 /**
  * Write a file of unknown type to disk.

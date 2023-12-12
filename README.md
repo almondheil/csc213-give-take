@@ -123,9 +123,10 @@ Parameters are as follows:
 			with the path `/path/to/file.png`, the name of the file when sent will
 			simply be `file.png`.
 
-  - When giving a directory, there is a limit on how many layers of directories
-			can be sent. If you are encountering this limit, try putting your
-			directory into an archive (e.g. zip, tar) before sending.
+  - There is a limit on the total size of files that can be sent. If you
+			encounter this limit, you could try compressing them somehow. It is also
+			possible to manually increase the limit, but the set limit of 256MB is in
+			place because network operations tend to take too long past that limit.
 
 ### Cancel a give
 

@@ -281,8 +281,12 @@ int main(int argc, char** argv) {
 
     // Attempt to read the file into memory now.
     // If there's an error, we want to know before daemonizing
-    file_t* file = read_file(argv[2]);
+    file_t* file = malloc(sizeof(file_t));
     if (file == NULL) {
+      perror("Failed to allocate file struct");
+      exit(EXIT_FAILURE);
+    }
+    if(read_file(argv[2], file) == -1) {
       exit(EXIT_FAILURE);
     }
 

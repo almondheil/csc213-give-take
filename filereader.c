@@ -12,25 +12,9 @@
 
 #include "utils.h"
 
-// Don't ever use more than 256 MB of persistent memory
-#define MAX_PERSISTENT_MEMORY 0x10000000
-size_t persistent_memory_used = 0;
-
-/**
- * Check whether using more persistent memory will be within permissible
- * limits. When allocation would go over cap, also prints a message so we
- * only need to have a text representation of the cap in one place.
- *
- * \param s  Possible size to be allocated
- * \return   0 if allocating memory is fine, 1 if it would go over limit.
- */
-int check_persistent_memory(size_t s) {
-  if (persistent_memory_used + s > MAX_PERSISTENT_MEMORY) {
-    fprintf(stderr, "Sending file(s) would use more than 256MB of memory!\n");
-    return 1;
-  }
-  return 0;
-}
+// Refuse to store more than 256MB of file data
+#define MAX_FILE_STORAGE 0x10000000
+size_t file_storage_used = 0;
 
 void free_file(file_t* file) {
   if (file == NULL) {
@@ -78,12 +62,15 @@ int read_regular(char* path, file_t* file) {
   }
   file->size = st.st_size;
 
-  // make space for the file contents and mark that memory as used
-  if (check_persistent_memory(file->size)) {
+  // Check whether storing this file puts us over self-set limit
+  if (file_storage_used + file->size > MAX_FILE_STORAGE) {
+    fprintf(stderr, "File storage would exceed max of 256MB. Refusing to continue.\n");
     return -1;
   }
+
+  // Allocate space, and check that it got allocated okay
   file->contents.data = malloc(file->size);
-  persistent_memory_used += file->size;
+  file_storage_used += file->size;
   if (file->contents.data == NULL) {
     perror("Failed to malloc space for file contents");
     return -1;
@@ -157,13 +144,7 @@ int read_directory(char* path, file_t* file) {
   }
   file->size = num_entries;
 
-  // Allocate space in the dir struct to store each entry and mark that memory as used
-  // Use calloc so any failed reads will be NULL
-  if (check_persistent_memory(file->size)) {
-    return -1;
-  }
   file->contents.entries = calloc(file->size, sizeof(file_t));
-  persistent_memory_used += file->size * sizeof(file_t);
 
   // Close the directory now
   if (closedir(dir) == -1) {
@@ -173,10 +154,23 @@ int read_directory(char* path, file_t* file) {
 
   // Recurse into each entry, storing the data
   for (int i = 0; i < num_entries; i++) {
-    // Recursively read the entry, storing it in this file
-    file_t* entry_file = read_file(all_entries[i]);
+    // Make space for a new file
+    file_t* entry_file = malloc(sizeof(file_t));
     if (entry_file == NULL) {
-      free(all_entries[i]);
+      // Free everything else
+      for (int j = i; j < num_entries; j++) {
+        free(all_entries[j]);
+      }
+      free(all_entries);
+      return -1;
+    }
+
+    // Read the entry
+    if (read_file(all_entries[i], entry_file) == -1) {
+      // Free everything else
+      for (int j = i; j < num_entries; j++) {
+        free(all_entries[j]);
+      }
       free(all_entries);
       return -1;
     }
@@ -193,57 +187,42 @@ int read_directory(char* path, file_t* file) {
   return 0;
 }
 
-file_t* read_file(char* path) {
-  // Attempt to malloc new memory for the file data storage.
-  if (check_persistent_memory(sizeof(file_t))) {
-    return NULL;
-  }
-  file_t* new = malloc(sizeof(file_t));
-  persistent_memory_used += sizeof(file_t);
-  if (new == NULL) {
-    perror("Failed to allocate file struct");
-    // free nothing, no allocations have been made
-    return NULL;
-  }
-
+// TODO redocument in .h
+int read_file(char* path, file_t* file) {
   // Store the name, trimming off the start of the path
-  new->name = strdup(get_shortname(path));
-  if (new->name == NULL) {
+  file->name = strdup(get_shortname(path));
+  if (file->name == NULL) {
     perror("Failed to allocate file name");
-    free_file(new);
-    return NULL;
+    return -1;
   }
 
   // stat the file, also checking that it exists
   struct stat st;
   if (stat(path, &st) == -1) {
     perror("Failed to stat file");
-    free_file(new);
-    return NULL;
+    return -1;
   }
 
   // Handle the file contents. May be a directory or a regular file
   else if (S_ISREG(st.st_mode)) {
-    new->type = F_REG;
-    new->contents.data = NULL;
+    file->type = F_REG;
+    file->contents.data = NULL;
 
     // Attempt to read the file contents and return them.
-    if (read_regular(path, new) == -1) {
-      free_file(new);
-      return NULL;
+    if (read_regular(path, file) == -1) {
+      return -1;
     }
-    return new;
+    return 0;
   } else if (S_ISDIR(st.st_mode)) {
-    new->type = F_DIR;
-    new->contents.entries = NULL;
+    file->type = F_DIR;
+    file->contents.entries = NULL;
 
     // The path used may differ from the one provided because user
     // input can be ambiguous.
     char* actual_path = strdup(path);
     if (actual_path == NULL) {
       perror("Failed to copy file path");
-      free_file(new);
-      return NULL;
+      return -1;
     }
 
     // directory paths can end in /, or not.
@@ -255,19 +234,17 @@ file_t* read_file(char* path) {
     }
 
     // Attempt to recursively read the directory contents and return them
-    if (read_directory(actual_path, new) == -1) {
-      free_file(new);
-      return NULL;
+    if (read_directory(actual_path, file) == -1) {
+      return -1;
     }
 
     // Free duplicated string
     free(actual_path);
 
-    return new;
+    return 0;
   } else {
     fprintf(stderr, "File %s is neither a regular file nor a directory! Skipping.\n", path);
-    free(new);
-    return NULL;
+    return -1;
   }
 }
 
