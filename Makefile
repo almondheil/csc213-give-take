@@ -5,10 +5,10 @@ CFLAGS := -Wall -g
 
 all: give take
 
-give: give.c message.c utils.c filereader.c logging.c
+give: give.c message.c utils.c filereader.c socket.c logging.c
 	${CC} ${CFLAGS} -lpthread -o $@ $^
 
-take: take.c message.c utils.c filereader.c
+take: take.c message.c utils.c filereader.c socket.c
 	${CC} ${CFLAGS} -o $@ $^
 
 clean:
