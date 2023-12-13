@@ -25,6 +25,11 @@ int send_file(int sock_fd, file_t* file) {
     return -1;
   }
 
+  // Send the mode too while we're at it
+  if (write(sock_fd, &file->mode, sizeof(mode_t)) != sizeof(mode_t)) {
+    return -1;
+  }
+
   // Send the actual name
   size_t bytes_written = 0;
   while (bytes_written < name_len) {
@@ -79,15 +84,22 @@ file_t* recv_file(int sock_fd) {
   }
 
   // Read the size of the file
-  size_t data_size;
-  if (read(sock_fd, &data_size, sizeof(size_t)) != sizeof(size_t)) {
+  size_t size;
+  if (read(sock_fd, &size, sizeof(size_t)) != sizeof(size_t)) {
+    return NULL;
+  }
+
+  // Then read the mode of the file
+  mode_t mode;
+  if (read(sock_fd, &mode, sizeof(mode_t)) != sizeof(mode_t)) {
     return NULL;
   }
 
   // Create space to store the received file
   file_t* file = malloc(sizeof(file_t));
-  file->size = data_size;
+  file->size = size;
   file->type = type;
+  file->mode = mode;
 
   // Make space to store the filename
   file->name = malloc(filename_len + 1);
@@ -115,7 +127,7 @@ file_t* recv_file(int sock_fd) {
     // For a regular file, read into file->contents.data
 
     // Make space to store the file contents
-    file->contents.data = malloc(data_size);
+    file->contents.data = malloc(size);
     if (file->contents.data == NULL) {
       free_file(file);
       return NULL;
@@ -123,8 +135,8 @@ file_t* recv_file(int sock_fd) {
 
     // Read the contents into our file struct
     bytes_read = 0;
-    while (bytes_read < data_size) {
-      ssize_t rc = read(sock_fd, file->contents.data + bytes_read, data_size - bytes_read);
+    while (bytes_read < size) {
+      ssize_t rc = read(sock_fd, file->contents.data + bytes_read, size - bytes_read);
 
       if (rc <= 0) {
         free_file(file);

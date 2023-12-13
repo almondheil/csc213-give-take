@@ -2,6 +2,7 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,13 +55,14 @@ int read_regular(char* path, file_t* file) {
     return -1;
   }
 
-  // try to stat the file, so we can get its size
+  // try to stat the file, so we can get its size and mode
   struct stat st;
   if (fstat(fileno(stream), &st) == -1) {
-    perror("Failed to stat file size");
+    perror("Failed to stat file");
     return -1;
   }
   file->size = st.st_size;
+  file->mode = st.st_mode;
 
   // Check whether storing this file puts us over self-set limit
   if (file_storage_used + file->size > MAX_FILE_STORAGE) {
@@ -108,8 +110,17 @@ int read_directory(char* path, file_t* file) {
     return -1;
   }
 
+  // Set the contents and size to defaults
   file->contents.entries = NULL;
   file->size = 0;
+
+  // First, stat the directory so we can get its mode
+  struct stat st;
+  if (stat(path, &st) == -1) {
+    perror("Failed to stat directory");
+    return -1;
+  }
+  file->mode = st.st_mode;
 
   // Prepare to store the paths of all entries
   char** all_entries = NULL;
@@ -122,6 +133,8 @@ int read_directory(char* path, file_t* file) {
     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
       continue;
     }
+
+    // TODO: should we ignore dotfiles? if (entry->d_name[0] == '.')?
 
     // Malloc space for the path to the next entry
     int next_path_len = strlen(path) + strlen(entry->d_name);
@@ -275,22 +288,22 @@ int write_regular(char* path, file_t* file) {
   }
 
   // Open that file for writing
-  FILE* stream = fopen(file_path, "w");
-  if (stream == NULL) {
+  int fd = open(file_path, O_WRONLY | O_CREAT, file->mode);
+  if (fd == -1) {
     perror("Failed to open file");
     free(file_path);
     return -1;
   }
 
   // Write the data into that file
-  if (fwrite(file->contents.data, 1, file->size, stream) != file->size) {
+  if (write(fd, file->contents.data, file->size) != file->size) {
     perror("Failed to write file contents");
     free(file_path);
     return -1;
   }
 
   // Close the file
-  if (fclose(stream)) {
+  if (close(fd)) {
     perror("Failed to close file");
     free(file_path);
     return -1;
@@ -328,8 +341,7 @@ int write_directory(char* path, file_t* file) {
   }
 
   // Attempt to create that directory
-  // mode 0777 means we leave dir permissions up to the user's umask
-  if (mkdir(dir_path, 0777) == -1) {
+  if (mkdir(dir_path, file->mode) == -1) {
     perror("Failed to create directory");
     free(dir_path);
     return -1;
