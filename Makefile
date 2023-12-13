@@ -14,8 +14,9 @@ take: take.c message.c utils.c filereader.c socket.c
 clean:
 	rm -f give take give-take.zip
 
-zip: clean
-	zip -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags LICENSE .nfs\* .github/\*
+zip:
+	zip -r give-take.zip . -x .git/\* .vscode/\* .clang-format .gitignore tags \
+                            LICENSE .nfs\* .github/\* give take give-take.zip
 
 format:
 	clang-format -i --style=file $(wildcard *.c) $(wildcard *.h)
