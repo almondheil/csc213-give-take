@@ -256,7 +256,7 @@ int read_file(char* path, file_t* file) {
 
     return 0;
   } else {
-    fprintf(stderr, "File %s is neither a regular file nor a directory! Skipping.\n", path);
+    fprintf(stderr, "File %s is neither a regular file nor a directory!\n", path);
     return -1;
   }
 }

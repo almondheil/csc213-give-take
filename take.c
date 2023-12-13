@@ -29,10 +29,10 @@ void take_file(int socket_fd, char* save_name) {
   // Try to receive the data now
   file_t* file = recv_file(socket_fd);
   if (file == NULL) {
-    if (errno != 0) {
-      perror("Failed to receive file");
-    } else {
+    if (errno == 0) { //< host called close on our socket
       fprintf(stderr, "You don't have permission to take that file!\n");
+    } else {
+      perror("Failed to receive file");
     }
     exit(EXIT_FAILURE);
   }
@@ -61,8 +61,8 @@ void take_file(int socket_fd, char* save_name) {
   // Announce that we got the transfer across
   printf("Successfully took %s\n", file->name);
 
-  // Swap in the original name of the file in case we changed it when
-  // writing the file to disk (needed to make free_file clean up properly)
+  // Swap the file name back to original
+  // This just makes sure it gets freed nicely when we free the file
   file->name = original_name;
 
   // Free malloc'd structures
@@ -83,17 +83,14 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
-  // Make space for the worst case hostname length. argv[1] cannot entirely be a
-  // hostname, so this allocates extra space, but that's okay.
-  // This is also long enough to fully contain "localhost" no matter what.
-  char hostname[strlen(argv[1]) + strlen(".cs.grinnell.edu")];
+  // Make enough space to hold the hostname, plus some extra. The waste is tolerable
+  char hostname[strlen(argv[1]) + strlen(".cs.grinnell.edu") + 1];
 
-  // Parse a port and hostname from argv[1]
+  // Attempt to parse connecting info from argv[1]
   unsigned short port = 0;
   parse_connection_info(argv[1], hostname, &port);
-
   if (port == 0) {
-    fprintf(stderr, "Could not parse port from argument %s!\n", argv[2]);
+    fprintf(stderr, "Failed to parse port!\n");
     exit(EXIT_FAILURE);
   }
 
