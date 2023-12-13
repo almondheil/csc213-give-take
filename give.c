@@ -15,8 +15,8 @@
 
 // Global variables to track this give's info
 #define MAX_HOSTNAME_LEN 128
-unsigned short port = 0;
-char host_name[MAX_HOSTNAME_LEN];
+unsigned short give_server_port = 0;
+char give_host[MAX_HOSTNAME_LEN];
 
 // Arguments needed to communicate with a client in a thread
 typedef struct {
@@ -25,20 +25,6 @@ typedef struct {
   char* target_username;
   char* owner_username;
 } comm_args_t;
-
-/**
- * Determine whether a user exists on this system.
- *
- * \param name  Username to test
- * \return      true if the user exists, false otherwise
- */
-bool user_exists(char* name) {
-  // Get the user by name
-  struct passwd* user = getpwnam(name);
-
-  // getpwnam returns NULL if the user does not exist
-  return (user != NULL);
-}
 
 /**
  * Receive requests from a client and act on them.
@@ -79,7 +65,7 @@ void* receive_client_requests(void* arg) {
       close(client_socket_fd);
 
       // Remove this give from the status file
-      remove_give_status(host_name, port);
+      remove_give_status(give_host, give_server_port);
 
       // Exit, stopping ALL threads
       exit(EXIT_SUCCESS);
@@ -168,48 +154,99 @@ void print_usage(char* prog_name) {
 
 int main(int argc, char** argv) {
   /*
-   * give --status
+   * First, parse the arguments
    */
-  if (argc == 2 && strcmp(argv[1], "--status") == 0) {
-    print_give_status();
-    exit(EXIT_SUCCESS);
-  }
 
-  /*
-   * Invalid usage (all other commands take 3 parameters)
-   */
-  if (argc != 3) {
-    // They definitely gave the wrong number of arguments
+  // Hold parsed argument info
+  enum {STATUS, CANCEL, GIVE} mode;
+
+  // args for cancel
+  // cancel_host is long enough to hold any hostname
+  char* cancel_host = NULL;
+  unsigned short cancel_port = 0;
+
+  // args for give, can be pointers as they come straight from argv
+  char* give_user = NULL;
+  char* give_path = NULL;
+  // TODO maybe these? give_host and give_server_port
+
+  if (argc == 2 && strcmp(argv[1], "--status") == 0) {
+    // give --status
+    mode = STATUS;
+  }
+  else if (argc == 3 && strcmp(argv[1], "-c") == 0) {
+    // give -c [HOST]:PORT
+    mode = CANCEL;
+
+    // Allocate enough space in cancel_host to hold the hostname
+    // (plus some extra space but that waste is okay)
+    cancel_host = malloc(sizeof(char) * (strlen(argv[2]) + strlen(".cs.grinnell.edu") + 1));
+    if (cancel_host == NULL) {
+      perror("Failed to allocate space for hostname");
+      exit(EXIT_FAILURE);
+    }
+
+    // Attempt to parse connection info from argv[2]
+    parse_connection_info(argv[2], cancel_host, &cancel_port);
+    if (cancel_port == 0) {
+      fprintf(stderr, "Failed to parse port!\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  else if (argc == 3) {
+    // give USER PATH
+    mode = GIVE;
+    give_user = argv[1];
+    give_path = argv[2];
+
+    // Check give_user is a real user
+    // note: we are assuming the same user exists on the taking system. true on mathlan
+    if (getpwnam(give_user) == NULL) {
+      fprintf(stderr, "User %s does not exist!\n", give_user);
+      exit(EXIT_FAILURE);
+    }
+
+    // Check give_path exists
+    if (access(give_path, F_OK) != 0) {
+      fprintf(stderr, "File %s does not exist!\n", give_path);
+      exit(EXIT_FAILURE);
+    }
+
+    // If there is a / on the end of the give_path, trim it off
+    int len = strlen(give_path);
+    if (give_path[len-1] == '/') {
+      give_path[len-1] = '\0';
+    }
+
+    // Store our hostname in the global var (something.cs.grinnell.edu)
+    // TODO: later, I wanna have these be local and maybe just pass them to each thread as needed. ugh
+    if (gethostname(give_host, MAX_HOSTNAME_LEN) == -1) {
+      perror("Failed to get hostname");
+      exit(EXIT_FAILURE);
+    }
+
+    // Trim the hostname down from something.cs.grinnell.edu -> something
+    // (yes this means like 90% of the buffer is just unused, whatever)
+    char* first_dot = strchr(give_host, '.');
+    if (first_dot != NULL) {
+      *first_dot = '\0';
+    }
+  } else {
+    // wrong number of arguments
     print_usage(argv[0]);
     exit(EXIT_FAILURE);
   }
 
   /*
-   * give -c [HOST:]PORT
+   * Then, act on the parsed arguments
    */
-  else if (strcmp(argv[1], "-c") == 0) {
-    // Check argv[1] is "-c",otherwise the arguments were malformed
-    if (strcmp(argv[1], "-c") != 0) {
-      print_usage(argv[0]);
-      exit(EXIT_FAILURE);
-    }
-
-    // Make space for the worst case hostname length. argv[1] cannot entirely be
-    // a hostname, so this allocates extra space, but that's okay. This is also
-    // long enough to fully contain "localhost" no matter what.
-    char hostname[strlen(argv[2]) + strlen(".cs.grinnell.edu")];
-
-    // Parse a port and hostname from that
-    unsigned short port = 0;
-    parse_connection_info(argv[2], hostname, &port);
-
-    if (port == 0) {
-      fprintf(stderr, "Could not parse port from argument %s!\n", argv[2]);
-      exit(EXIT_FAILURE);
-    }
+  if (mode == STATUS) {
+      print_give_status();
+      exit(0);
+  } else if (mode == CANCEL) {
 
     // Connect to the port
-    int socket_fd = socket_connect(hostname, port);
+    int socket_fd = socket_connect(cancel_host, cancel_port);
     if (socket_fd == -1) {
       perror("Failed to connect");
       exit(EXIT_FAILURE);
@@ -226,57 +263,23 @@ int main(int argc, char** argv) {
     }
 
     // Announce that everything went okay
-    printf("Successfully cancelled give\n");
+    printf("Successfully cancelled give.\n");
 
     // Close the socket before we exit
+    free(cancel_host);
     close(socket_fd);
-  }
-
-  /*
-   * give USER FILE
-   */
-  else {
-    // Check argv[1] is a user
-    if (!user_exists(argv[1])) {
-      fprintf(stderr, "User %s does not exist!\n", argv[1]);
-      exit(EXIT_FAILURE);
-    }
-
-    // Check argv[2] exists
-    if (access(argv[2], F_OK) != 0) {
-      fprintf(stderr, "File %s does not exist!\n", argv[2]);
-      exit(EXIT_FAILURE);
-    }
-
-    // Check argv[2] is a supported type of file, not something else
-    struct stat st;
-    if (stat(argv[2], &st) == -1) {
-      perror("Failed to stat file");
-      exit(EXIT_FAILURE);
-    }
-    if (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode)) {
-      fprintf(stderr, "Can only give a regular file or a directory.\n");
-      exit(EXIT_FAILURE);
-    }
-
-    // Open a port for the server, using the global port var
-    int server_socket_fd = server_socket_open(&port);
+  } else if (mode == GIVE) {
+    // Open a server, and store the port globally
+    int server_socket_fd = server_socket_open(&give_server_port);
     if (server_socket_fd == -1) {
       perror("Failed to open server socket");
       exit(EXIT_FAILURE);
     }
 
-    // Start listening for connections, with a maximum of one queued connection
+    // Start listening for connections on the server
     if (listen(server_socket_fd, 1)) {
       perror("Failed to listen");
       exit(EXIT_FAILURE);
-    }
-
-    // Trim the trailing / off the provided file if it exists
-    char* file_path = argv[2];
-    int len = strlen(file_path);
-    if (file_path[len - 1] == '/') {
-      file_path[len - 1] = '\0';
     }
 
     // Attempt to read the file into memory now.
@@ -286,7 +289,7 @@ int main(int argc, char** argv) {
       perror("Failed to allocate file struct");
       exit(EXIT_FAILURE);
     }
-    if(read_file(argv[2], file) == -1) {
+    if(read_file(give_path, file) == -1) {
       exit(EXIT_FAILURE);
     }
 
@@ -302,7 +305,7 @@ int main(int argc, char** argv) {
       default:
         // Parent does not wait for child
         free_file(file);
-        printf("Server listening on port %u\n", port);
+        printf("Server listening on port %u\n", give_server_port);
         exit(0);
     }
 
@@ -312,30 +315,14 @@ int main(int argc, char** argv) {
       exit(EXIT_FAILURE);
     }
 
-    // Store our hostname in the global variable
-    if (gethostname(host_name, MAX_HOSTNAME_LEN) == -1) {
-      perror("Failed to get hostname");
-      exit(EXIT_FAILURE);
-    }
-
-    // Trim the hostname from HOST.cs.grinnell.edu to HOST
-    char* first_dot = strchr(host_name, '.');
-    if (first_dot != NULL) {
-      *first_dot = '\0';
-    }
-
     // Log that we are giving this file
-    add_give_status(get_shortname(file_path), argv[1], host_name, port);
+    add_give_status(get_shortname(give_path), argv[1], give_host, give_server_port);
 
     // Host the file until somebody quits the server
+    // This function does not exit on success, but it cleans up after itself
     int rc = host_file(argv[1], file, server_socket_fd);
     if (rc == -1) {
       exit(EXIT_FAILURE);
     }
-
-    // With no errors we never return from host_file, that's fine though
-    // because it cleans up what is possible to clean up
   }
-
-  return 0;
 }
