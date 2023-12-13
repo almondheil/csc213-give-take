@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 typedef enum {
   F_REG,  //< regular file
@@ -18,9 +19,10 @@ typedef enum {
 typedef struct file {
   filetype type;
 
-  // both normal and directory have a name and size
+  // both regular and directory have these
   char* name;
   size_t size;
+  mode_t mode;
 
   // Holds either data pointer or pointer to entries.
   union {
