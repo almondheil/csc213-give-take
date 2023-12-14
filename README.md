@@ -116,40 +116,42 @@ Successfully took userA-bashrc
 ## Checking status
 
 The user who initialized a give can check the status of any outgoing gives which have not yet been closed.
+As shown here, the status command also shows gives that were started on other machines.
 
 ```
-[userA@even] ~ $ give userB projectdir/
-Server listening on port 57599
-[userA@even] ~ $ give userB otherprojectdir/
-Server listening on port 40629
 [userA@even] ~ $ give --status
+hanging-around
+  to:    userC
+  host:  loeb:47356
+  cwd:   /home/userA/projects
+  time:  2023-12-10 09:23:59
 projectdir
-  To: userB
-  Server: even:57599
-  Directory: /home/userA
-  Time: 2023-12-14 10:06:49
+  to:    userB
+  host:  even:57599
+  cwd:   /home/userA
+  time:  2023-12-14 10:06:49
 otherprojectdir
-  To: heilalmond
-  Server: even:40629
-  Directory: /home/userA
-  Time: 2023-12-14 10:06:53
+  to:    heilalmond
+  host:  even:40629
+  cwd:   /home/userA
+  time:  2023-12-14 10:07:32
 ```
 
 ## Cancelling a mistake
 
-Suppose that from the previous example, userA didn't really mean to send `projectdir`, but `otherprojectdir` instead.
-To fix this mistake (even if they closed the terminal) they can refer to the information printed out by the status command in order to cancel. For instance,
+Suppose that from the previous example, userA didn't really mean to send `projectdir`, and also wants to clean up the old give of `hanging-around` from earlier that week.
+To do this, they can simply cancel them from the currently logged in machine.
 
 ```
 [userA@even] ~ $ give -c 57599
-Successfully cancelled give.
+Successfully cancelled give
 ```
 
-This can also be done from a different machine:
+It is also possible to cancel the give that was started on `loeb`, even while logged in on `even`:
 
 ```
-[userA@loeb] ~ $ give -c even:40629
-Successfully cancelled give.
+[userA@even] ~ $ give -c loeb:47356
+Successfully cancelled give
 ```
 
 # Detailed usage
@@ -159,7 +161,7 @@ Successfully cancelled give.
 The `give` command has the most power, being able to create, cancel, and list
 transfers.
 
-### Give a file or directory to a user
+### Give mode
 
 ```
 give TARGET_USER PATH
@@ -189,7 +191,7 @@ Parameters are as follows:
 			possible to manually increase the limit, but the set limit of 256MB is in
 			place because network operations tend to take too long past that limit.
 
-### Cancel a give
+### Cancel mode
 
 ```
 give -c [HOST:]PORT
@@ -211,7 +213,7 @@ a give on a different system than localhost.
 - `PORT` is a required network parameter. It refers to the port that the initial
 	give was hosted on.
 
-### List pending gives
+### Status mode
 
 ```
 give --status
@@ -222,7 +224,7 @@ none. It does not take any parameters to customize the behavior.
 
 ## `take` usage
 
-### Take a file or directory that has been given
+Take only has one mode, to recieve files that have been given.
 
 ```
 take [HOST:]PORT [NAME]
