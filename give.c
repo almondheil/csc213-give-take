@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
     }
 
     // Log that we are giving this file
-    add_give_status(get_shortname(give_path), argv[1], give_host, give_server_port);
+    add_give_status(give_path, argv[1], give_host, give_server_port);
 
     // Host the file until somebody quits the server
     // This function does not exit on success, but it cleans up after itself

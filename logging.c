@@ -211,10 +211,13 @@ void print_give_status() {
 
     // Pretty print out the data we just got
     printf("%s\n", file_name);
-    printf("  To: %s\n", target_user);
-    printf("  Server: %s:%s\n", host, port);
-    printf("  Directory: %s\n", cwd);
-    printf("  Time: %s\n", time);
+    printf("  to:    %s\n", target_user);
+    printf("  host:  %s:%s\n", host, port);
+    if (file_name[0] != '/') {
+      // Only print out cwd if file_name is not absolute
+      printf("  cwd:   %s\n", cwd);
+    }
+    printf("  time:  %s\n", time);
   }
 
   if (fclose(stream)) {
