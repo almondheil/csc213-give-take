@@ -169,8 +169,6 @@ int main(int argc, char** argv) {
   // args for give, can be pointers as they come straight from argv
   char* give_user = NULL;
   char* give_path = NULL;
-  // TODO maybe these? give_host and give_server_port
-
   if (argc == 2 && strcmp(argv[1], "--status") == 0) {
     // give --status
     mode = STATUS;
@@ -220,7 +218,6 @@ int main(int argc, char** argv) {
     }
 
     // Store our hostname in the global var (something.cs.grinnell.edu)
-    // TODO: later, I wanna have these be local and maybe just pass them to each thread as needed. ugh
     if (gethostname(give_host, MAX_HOSTNAME_LEN) == -1) {
       perror("Failed to get hostname");
       exit(EXIT_FAILURE);
@@ -264,7 +261,7 @@ int main(int argc, char** argv) {
     }
 
     // Announce that everything went okay
-    printf("Successfully cancelled give.\n");
+    printf("Successfully cancelled give\n");
 
     // Close the socket before we exit
     free(cancel_host);
