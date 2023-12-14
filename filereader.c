@@ -66,7 +66,7 @@ int read_regular(char* path, file_t* file) {
 
   // Check whether storing this file puts us over self-set limit
   if (file_storage_used + file->size > MAX_FILE_STORAGE) {
-    fprintf(stderr, "File storage would exceed max of 256MB. Refusing to continue.\n");
+    fprintf(stderr, "File storage would exceed max of 256MB. Refusing to continue\n");
     return -1;
   }
 
@@ -134,8 +134,6 @@ int read_directory(char* path, file_t* file) {
       continue;
     }
 
-    // TODO: should we ignore dotfiles? if (entry->d_name[0] == '.')?
-
     // Malloc space for the path to the next entry
     int next_path_len = strlen(path) + strlen(entry->d_name);
     char* next_path = malloc(sizeof(char) * (next_path_len + 1));
@@ -200,7 +198,6 @@ int read_directory(char* path, file_t* file) {
   return 0;
 }
 
-// TODO redocument in .h
 int read_file(char* path, file_t* file) {
   // Store the name, trimming off the start of the path
   file->name = strdup(get_shortname(path));
