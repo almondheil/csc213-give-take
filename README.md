@@ -58,38 +58,99 @@ proposal, but I figure I might as well list it here.
 
 # Example usage
 
-First, one user must send the other a file, and the port that has been opened
-will be displayed.
+## Between users on one machine
+
+First, one user sends the other a file.
 
 ```
-[heilalmond@even] ~ $ ./give fakeuser projectdir/
+[userA@even] ~ $ give userB projectdir/
 Server listening on port 50112
 ```
 
-Then, `heilalmond` is free to log off or do anything else on the system. Anytime in
-the future, the user that they sent it to can pick up the file.
-
-If this is happening on the same computer (localhost), it is possible to pick up
-the file knowing only the port:
+Then, the other user can take the file once they are told the correct port to use:
 
 ```
-[fakeuser@even] ~ $ ./take 50112
+[userB@even] ~ $ take 50112
 Successfully took projectdir
 ```
 
-However, it is also possible to retrieve a file that was originally given from a
-different machine. In order to do this, you also need to know the name of the
-MathLAN computer (without `.cs.grinnell.edu`):
+## Between users on multiple machines
+
+Just like on one machine, one user initializes the give.
 
 ```
-[fakeuser@forsythe] ~ $ ./take even:50112
+[userA@even] ~ $ give userB projectdir/
+Server listening on port 50112
+```
+
+The only extra info needed to take the file is the name of the machine the transaction was started from.
+
+```
+[userB@loeb] ~ $ take even:50112
 Successfully took projectdir
 ```
 
-In either of these cases, the given directory will be loaded into `fakeuser`'s
-current directory, as long as it does not already exist. This utility avoids
-overwriting existing data, requiring the receiving user to change directories
-or fix the conflict before the transfer can go through.
+## When there is a conflicting filename
+
+Suppose userA wants to send their `.bashrc` to userB:
+
+```
+[userA@even] ~ $ give userB ~/.bashrc
+Server listening on port 60703
+```
+
+However, when userB tries to take the file they realize they already have a `.bashrc`!
+
+```
+[userB@noyce] ~ $ take even:60703
+Refusing to overwrite existing file ./.bashrc
+```
+
+Luckily, they can just repeat the command, but specifiy a new name for the file to be saved under.
+
+```
+[userB@noyce] ~ $ take even:60703 userA-bashrc
+Successfully took userA-bashrc
+```
+
+## Checking status
+
+The user who initialized a give can check the status of any outgoing gives which have not yet been closed.
+
+```
+[userA@even] ~ $ give userB projectdir/
+Server listening on port 57599
+[userA@even] ~ $ give userB otherprojectdir/
+Server listening on port 40629
+[userA@even] ~ $ give --status
+projectdir
+  To: userB
+  Server: even:57599
+  Directory: /home/userA
+  Time: 2023-12-14 10:06:49
+otherprojectdir
+  To: heilalmond
+  Server: even:40629
+  Directory: /home/userA
+  Time: 2023-12-14 10:06:53
+```
+
+## Cancelling a mistake
+
+Suppose that from the previous example, userA didn't really mean to send `projectdir`, but `otherprojectdir` instead.
+To fix this mistake (even if they closed the terminal) they can refer to the information printed out by the status command in order to cancel. For instance,
+
+```
+[userA@even] ~ $ give -c 57599
+Successfully cancelled give.
+```
+
+This can also be done from a different machine:
+
+```
+[userA@loeb] ~ $ give -c even:40629
+Successfully cancelled give.
+```
 
 # Detailed usage
 
